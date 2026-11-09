@@ -1,0 +1,1 @@
+export default {content:['./resources/**/*.blade.php','./resources/**/*.jsx'],theme:{extend:{colors:{brand:{green:'#176B43',light:'#E7F1E8',cream:'#F8F5ED',gold:'#D5AA55'}}}},plugins:[]};
