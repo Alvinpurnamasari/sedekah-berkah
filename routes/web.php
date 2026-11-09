@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\Superadmin\UserManagementController;
 use App\Http\Controllers\Superadmin\CampaignManagementController;
+use App\Http\Controllers\Superadmin\FinanceController;
+use App\Http\Controllers\Superadmin\AuditLogController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -116,6 +118,16 @@ Route::middleware('auth')->group(function () {
             'summary' => $summary,
         ]);
     })->middleware('role:admin')->name('admin.dashboard');
+        // Pengajuan pengeluaran oleh Admin
+        Route::get('/admin/pengeluaran', [
+            \App\Http\Controllers\Admin\ExpenseController::class,
+            'index'
+        ])->middleware('role:admin')->name('admin.expenses.index');
+    
+        Route::post('/admin/pengeluaran', [
+            \App\Http\Controllers\Admin\ExpenseController::class,
+            'store'
+        ])->middleware('role:admin')->name('admin.expenses.store');
 
     Route::get('/superadmin', function () {
 
@@ -206,6 +218,26 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::delete('/program/{id}', [CampaignManagementController::class, 'destroy'])
         ->name('campaigns.destroy');
 
+    Route::get('/keuangan', [FinanceController::class, 'index'])
+        ->name('finance.index');
+
+        Route::get('/pengeluaran', [
+            \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
+            'index'
+        ])->name('expenses.index');
+        
+        Route::post('/pengeluaran/{id}/setujui', [
+            \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
+            'approve'
+        ])->name('expenses.approve');
+        
+        Route::post('/pengeluaran/{id}/tolak', [
+            \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
+            'reject'
+        ])->name('expenses.reject');
+
+        Route::get('/audit-log', [AuditLogController::class, 'index'])
+        ->name('audit.index');
 });
 
 });

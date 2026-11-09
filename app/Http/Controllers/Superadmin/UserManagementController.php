@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class UserManagementController extends Controller
@@ -17,8 +18,8 @@ class UserManagementController extends Controller
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
                 });
             })
             ->when($request->role, function ($query, $role) {
@@ -60,7 +61,7 @@ class UserManagementController extends Controller
             ]);
         }
 
-        User::create([
+        $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
@@ -68,6 +69,17 @@ class UserManagementController extends Controller
             'role_id' => $role->id,
             'status' => 'active',
         ]);
+
+        $this->writeAuditLog(
+            $request,
+            'user_created',
+            $user,
+            [
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $role->name,
+            ]
+        );
 
         return redirect()->route('superadmin.users.index')
             ->with('success', 'Pengguna berhasil ditambahkan.');
@@ -92,12 +104,18 @@ class UserManagementController extends Controller
             ]);
         }
 
-        // Superadmin tidak boleh mengubah role akunnya sendiri.
         if ($user->id === Auth::id() && $user->role?->name === 'superadmin') {
             return back()->withErrors([
                 'role_id' => 'Role akun Superadmin yang sedang digunakan tidak dapat diubah.',
             ]);
         }
+
+        $oldData = [
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role?->name,
+        ];
 
         $user->update([
             'name' => $data['name'],
@@ -106,54 +124,122 @@ class UserManagementController extends Controller
             'role_id' => $role->id,
         ]);
 
+        $this->writeAuditLog(
+            $request,
+            'user_updated',
+            $user,
+            [
+                'before' => $oldData,
+                'after' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $role->name,
+                ],
+            ]
+        );
+
         return redirect()
-    ->route('superadmin.users.index', [], 303)
-    ->with('success', 'Data pengguna berhasil diperbarui.');
+            ->route('superadmin.users.index', [], 303)
+            ->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
-    public function toggleStatus(string $id)
-    {
-        $user = User::findOrFail($id);
+  
+public function toggleStatus(Request $request, string $id)
+{
+    $user = User::findOrFail($id);
 
-        if ($user->id === Auth::id()) {
-            return back()->withErrors([
+    if ($user->id === Auth::id()) {
+        return redirect()
+            ->route('superadmin.users.index', [], 303)
+            ->withErrors([
                 'status' => 'Kamu tidak dapat menonaktifkan akun yang sedang digunakan.',
             ]);
-        }
-
-        if ($user->role?->name === 'superadmin') {
-            return back()->withErrors([
-                'status' => 'Akun Superadmin tidak dapat dinonaktifkan melalui menu ini.',
-            ]);
-        }
-
-        $user->status = $user->status === 'active' ? 'inactive' : 'active';
-        $user->save();
-
-        return back()->with(
-            'success',
-            'Status pengguna berhasil diperbarui.'
-        );
     }
 
-    public function resetPassword(Request $request, string $id)
-    {
-        $user = User::findOrFail($id);
+    if ($user->role?->name === 'superadmin') {
+        return redirect()
+            ->route('superadmin.users.index', [], 303)
+            ->withErrors([
+                'status' => 'Akun Superadmin tidak dapat dinonaktifkan melalui menu ini.',
+            ]);
+    }
 
-        if ($user->id === Auth::id()) {
-            return back()->withErrors([
+    $oldStatus = $user->status;
+
+    $user->status = $user->status === 'active' ? 'inactive' : 'active';
+    $user->save();
+
+    $this->writeAuditLog(
+        $request,
+        'user_status_changed',
+        $user,
+        [
+            'name' => $user->name,
+            'before' => $oldStatus,
+            'after' => $user->status,
+        ]
+    );
+
+    return redirect()
+        ->route('superadmin.users.index', [], 303)
+        ->with('success', 'Status pengguna berhasil diperbarui.');
+}
+
+
+ 
+public function resetPassword(Request $request, string $id)
+{
+    $user = User::findOrFail($id);
+
+    if ($user->id === Auth::id()) {
+        return redirect()
+            ->route('superadmin.users.index', [], 303)
+            ->withErrors([
                 'password' => 'Gunakan pengaturan akun sendiri untuk mengganti password.',
             ]);
-        }
+    }
 
-        $data = $request->validate([
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+    $data = $request->validate([
+        'password' => ['required', 'string', 'min:8', 'confirmed'],
+    ]);
+
+    $user->update([
+        'password' => $data['password'],
+    ]);
+
+    $this->writeAuditLog(
+        $request,
+        'user_password_reset',
+        $user,
+        [
+            'name' => $user->name,
+            'email' => $user->email,
+            'message' => 'Password pengguna berhasil diatur ulang.',
+        ]
+    );
+
+    return redirect()
+        ->route('superadmin.users.index', [], 303)
+        ->with('success', 'Password pengguna berhasil diatur ulang.');
+}
+
+
+    private function writeAuditLog(
+        Request $request,
+        string $action,
+        User $user,
+        array $metadata = []
+    ): void {
+        DB::table('audit_logs')->insert([
+            'user_id' => Auth::id(),
+            'action' => $action,
+            'entity_type' => 'user',
+            'entity_id' => $user->id,
+            'metadata' => json_encode($metadata),
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
-
-        $user->update([
-            'password' => $data['password'],
-        ]);
-
-        return back()->with('success', 'Password pengguna berhasil diatur ulang.');
     }
 }

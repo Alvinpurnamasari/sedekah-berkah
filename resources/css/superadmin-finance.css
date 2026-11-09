@@ -1,0 +1,252 @@
+
+.sf-page {
+    padding: 30px;
+    color: #183d32;
+}
+
+.sf-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 26px;
+}
+
+.sf-eyebrow {
+    color: #16845c;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+.sf-heading h1 {
+    font-size: 28px;
+    margin: 9px 0;
+    font-weight: 600;
+}
+
+.sf-heading p,
+.sf-panel-heading p {
+    color: #84958e;
+    font-size: 13px;
+    margin: 0;
+}
+
+.sf-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 25px;
+}
+
+.sf-summary-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    padding: 22px;
+    border: 1px solid #e4ece7;
+    border-radius: 15px;
+    background: #fff;
+    min-width: 0;
+}
+
+.sf-card-icon {
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 13px;
+}
+
+.sf-card-icon.green {
+    background: #e2f4e9;
+    color: #16845c;
+}
+
+.sf-card-icon.blue {
+    background: #e6f1fb;
+    color: #3479b7;
+}
+
+.sf-card-icon.purple {
+    background: #eee9fa;
+    color: #7655b7;
+}
+
+.sf-card-icon.orange {
+    background: #fff0e1;
+    color: #c77a28;
+}
+
+.sf-card-icon.yellow {
+    background: #fff7d9;
+    color: #a9871f;
+}
+
+.sf-card-icon.dark {
+    background: #e4eee9;
+    color: #174b39;
+}
+
+.sf-card-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sf-card-content span {
+    font-size: 12px;
+    color: #82938c;
+    margin-bottom: 7px;
+}
+
+.sf-card-content strong {
+    font-size: 19px;
+    overflow-wrap: anywhere;
+    color: #183d32;
+}
+
+.sf-card-content small {
+    color: #9aa8a2;
+    font-size: 11px;
+    margin-top: 7px;
+}
+
+.sf-panel {
+    background: white;
+    border: 1px solid #e5ece8;
+    border-radius: 15px;
+    margin-bottom: 22px;
+    overflow: hidden;
+}
+
+.sf-panel-heading {
+    padding: 22px 22px 17px;
+}
+
+.sf-panel-heading h2 {
+    font-size: 17px;
+    margin: 0 0 7px;
+    font-weight: 650;
+}
+
+.sf-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.sf-table {
+    width: 100%;
+    border-collapse: collapse;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.sf-table th {
+    text-align: left;
+    padding: 14px 17px;
+    color: #7f9189;
+    background: #f7faf8;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.sf-table td {
+    padding: 16px 17px;
+    border-top: 1px solid #edf1ee;
+    color: #526b60;
+}
+
+.sf-table td strong {
+    color: #244b3c;
+}
+
+.sf-donor-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.sf-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    background: #edf1ef;
+    color: #63766c;
+}
+
+.sf-status.paid,
+.sf-status.approved {
+    color: #16845c;
+    background: #e3f5e9;
+}
+
+.sf-status.pending {
+    color: #a77919;
+    background: #fff5d9;
+}
+
+.sf-status.expired,
+.sf-status.failed,
+.sf-status.rejected {
+    color: #b64e4e;
+    background: #fbe9e9;
+}
+
+.sf-empty {
+    text-align: center;
+    padding: 30px !important;
+    color: #9aa8a2 !important;
+}
+
+.sf-note {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 18px;
+    background: #eaf5ef;
+    border-radius: 12px;
+    color: #47705c;
+    font-size: 12px;
+}
+
+.sf-note svg {
+    flex-shrink: 0;
+}
+
+@media (max-width: 1050px) {
+    .sf-card-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 650px) {
+    .sf-page {
+        padding: 18px 13px;
+    }
+
+    .sf-heading h1 {
+        font-size: 23px;
+    }
+
+    .sf-card-grid {
+        grid-template-columns: 1fr;
+        gap: 11px;
+    }
+
+    .sf-summary-card {
+        padding: 17px;
+    }
+
+    .sf-card-content strong {
+        font-size: 17px;
+    }
+
+    .sf-panel-heading {
+        padding: 18px 15px;
+    }
+}

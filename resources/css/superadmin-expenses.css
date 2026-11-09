@@ -1,0 +1,294 @@
+
+.se-page {
+    padding: 32px;
+    color: #123f32;
+}
+
+.se-heading h1 {
+    font-size: 28px;
+    margin: 10px 0;
+    font-weight: 600;
+}
+
+.se-heading p,
+.se-card-heading p {
+    color: #829b91;
+    margin-top: 8px;
+}
+
+.se-eyebrow {
+    color: #16805b;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.se-summary,
+.se-card {
+    background: #fff;
+    border: 1px solid #e1ebe6;
+    border-radius: 16px;
+    margin-top: 24px;
+}
+
+.se-summary {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 24px;
+}
+
+.se-summary-icon {
+    background: #e4f5ed;
+    color: #16805b;
+    padding: 15px;
+    border-radius: 12px;
+}
+
+.se-summary span {
+    display: block;
+    color: #829b91;
+    font-size: 13px;
+}
+
+.se-summary strong {
+    display: block;
+    font-size: 27px;
+    margin-top: 5px;
+}
+
+.se-card {
+    overflow: hidden;
+}
+
+.se-card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+}
+
+.se-card-heading h2 {
+    font-size: 19px;
+    margin: 0;
+}
+
+.se-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #dce8e2;
+    border-radius: 9px;
+    padding: 10px 13px;
+    color: #78958a;
+    min-width: 280px;
+}
+
+.se-search input {
+    border: 0;
+    outline: none;
+    width: 100%;
+    min-width: 0;
+}
+
+.se-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.se-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.se-table th {
+    background: #f5f9f7;
+    color: #718b80;
+    font-size: 10px;
+    text-align: left;
+    padding: 16px;
+    white-space: nowrap;
+}
+
+.se-table td {
+    padding: 17px 16px;
+    border-top: 1px solid #edf1ef;
+    vertical-align: middle;
+}
+
+.se-table td small {
+    display: block;
+    color: #829b91;
+    margin-top: 6px;
+    max-width: 240px;
+}
+
+.se-status {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.se-status.pending {
+    color: #a36c00;
+    background: #fff3d6;
+}
+
+.se-status.approved {
+    color: #08764d;
+    background: #e1f5e9;
+}
+
+.se-status.rejected {
+    color: #b33d3d;
+    background: #fde8e8;
+}
+
+.se-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.se-actions button,
+.se-proof {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.se-approve {
+    color: #08764d;
+    background: #e1f5e9;
+}
+
+.se-reject {
+    color: #b33d3d;
+    background: #fde8e8;
+}
+
+.se-actions button:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+
+.se-proof {
+    color: #147451;
+    background: #e8f5ee;
+}
+
+.se-processed {
+    color: #829b91;
+    font-size: 11px;
+}
+
+.se-empty {
+    text-align: center;
+    padding: 55px 15px !important;
+    color: #829b91;
+}
+
+.se-empty svg,
+.se-empty strong,
+.se-empty span {
+    display: block;
+    margin: 8px auto;
+}
+
+.se-pagination {
+    padding: 18px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #829b91;
+    font-size: 12px;
+}
+
+.se-pagination div {
+    display: flex;
+    gap: 5px;
+}
+
+.se-pagination button {
+    border: 1px solid #e1ebe6;
+    border-radius: 6px;
+    padding: 7px 11px;
+    background: #fff;
+    cursor: pointer;
+}
+
+.se-pagination button.active {
+    background: #147451;
+    color: #fff;
+}
+
+.se-pagination button:disabled {
+    opacity: .4;
+    cursor: default;
+}
+
+.se-note {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #eaf5ef;
+    color: #477b65;
+    border-radius: 12px;
+    padding: 17px 20px;
+    margin-top: 22px;
+    font-size: 12px;
+}
+
+@media (max-width: 768px) {
+    .se-page {
+        padding: 18px;
+    }
+
+    .se-card-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .se-search {
+        min-width: 0;
+    }
+
+    .se-pagination {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 15px;
+    }
+}
+
+.se-rejection-reason {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #fff1f2;
+    border: 1px solid #fecdd3;
+    border-radius: 8px;
+    color: #991b1b;
+    font-size: 12px;
+    line-height: 1.5;
+    max-width: 240px;
+}
+
+.se-rejection-reason strong {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 700;
+}
+
+.se-rejection-reason p {
+    margin: 0;
+    overflow-wrap: anywhere;
+}

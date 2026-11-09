@@ -1,2 +1,183 @@
 @tailwind base;@tailwind components;@tailwind utilities;
 :root{font-family:'Plus Jakarta Sans',Inter,system-ui,sans-serif;color:#202a24;background:#fbfcfa}*{box-sizing:border-box}body{margin:0}.container{max-width:1120px;margin:auto;padding:0 22px}.btn{display:inline-flex;align-items:center;justify-content:center;background:#176b43;color:white;padding:13px 20px;border-radius:12px;font-weight:700;text-decoration:none;border:0;cursor:pointer}.btn-outline{background:white;color:#176b43;border:1px solid #cfe0d3}.card{background:white;border:1px solid #e7ece8;border-radius:18px;padding:20px;box-shadow:0 8px 28px #163d2410}.muted{color:#718078}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}.hero{background:linear-gradient(120deg,#eff7ef,#fbf5e8);padding:64px 0}.pill{display:inline-block;border-radius:999px;background:#e7f1e8;color:#176b43;padding:6px 12px;font-size:12px;font-weight:700}input,select,textarea{width:100%;padding:12px;border:1px solid #dce5de;border-radius:10px;background:white}label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}nav a{color:#33443a;text-decoration:none;margin-left:20px}@media(max-width:720px){.grid3{grid-template-columns:1fr}.hero{padding:42px 0}nav a{margin-left:8px;font-size:12px}.container{padding:0 16px}}
+
+
+.sa-audit-page {
+    padding: 24px;
+}
+
+.sa-audit-header {
+    margin-bottom: 24px;
+}
+
+.sa-audit-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.sa-audit-header p {
+    color: #64748b;
+    margin: 0;
+}
+
+.sa-audit-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.sa-audit-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 0 12px;
+    flex: 1;
+    min-width: 220px;
+}
+
+.sa-audit-search input {
+    border: 0;
+    outline: none;
+    padding: 12px 0;
+    width: 100%;
+}
+
+.sa-audit-filters select,
+.sa-audit-filters button {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    background: white;
+    padding: 10px 14px;
+}
+
+.sa-audit-filters button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.sa-audit-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.sa-audit-card-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.sa-audit-card-title h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.sa-audit-card-title span {
+    margin-left: auto;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.sa-audit-table-wrap {
+    overflow-x: auto;
+}
+
+.sa-audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.sa-audit-table th,
+.sa-audit-table td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+}
+
+.sa-audit-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+}
+
+.sa-audit-action {
+    display: inline-block;
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 5px 9px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.sa-audit-detail {
+    min-width: 220px;
+    max-width: 350px;
+    overflow-wrap: anywhere;
+}
+
+.sa-audit-empty {
+    text-align: center !important;
+    color: #64748b;
+    padding: 35px !important;
+}
+
+.sa-audit-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 16px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.sa-audit-pagination div {
+    display: flex;
+    gap: 5px;
+}
+
+.sa-audit-pagination button {
+    padding: 7px 11px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+}
+
+.sa-audit-pagination button.active {
+    background: #166534;
+    color: white;
+}
+
+.sa-audit-pagination button:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+    .sa-audit-page {
+        padding: 14px;
+    }
+
+    .sa-audit-filters {
+        flex-direction: column;
+    }
+
+    .sa-audit-search {
+        min-height: 44px;
+    }
+}

@@ -11,12 +11,12 @@ const menus = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, url: '/superadmin' },
     { id: 'users', label: 'Manajemen Pengguna', icon: Users, url: '/superadmin/pengguna' },
     { id: 'programs', label: 'Manajemen Program', icon: Megaphone, url: '/superadmin/program' },
-    { id: 'finance', label: 'Manajemen Keuangan', icon: Wallet },
+    { id: 'finance', label: 'Manajemen Keuangan', icon: Wallet, url: '/superadmin/keuangan' },
     { id: 'transactions', label: 'Manajemen Transaksi', icon: Receipt },
     { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart },
-    { id: 'expenses', label: 'Pengeluaran & Persetujuan', icon: ClipboardList },
+    { id: 'expenses', label: 'Pengeluaran & Persetujuan', icon: ClipboardList, url: '/superadmin/pengeluaran' },
     { id: 'reports', label: 'Laporan & Transparansi', icon: ChartNoAxesCombined },
-    { id: 'audit', label: 'Audit Log', icon: History },
+    { id: 'audit', label: 'Audit Log', icon: ClipboardList, url: '/superadmin/audit-log' },
     { id: 'settings', label: 'Pengaturan Sistem', icon: Settings },
 ];
 

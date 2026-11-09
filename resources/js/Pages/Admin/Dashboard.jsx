@@ -28,7 +28,7 @@ const adminMenus = [
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
     { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart },
     { id: 'documentation', label: 'Dokumentasi', icon: Images },
-    { id: 'expenses', label: 'Pengeluaran', icon: Wallet },
+    { id: 'expenses', label: 'Pengeluaran', icon: Wallet, url: '/admin/pengeluaran' },
     { id: 'reports', label: 'Laporan Kegiatan', icon: FileText },
 ];
 
@@ -107,25 +107,42 @@ export default function Dashboard({ summary = {} }) {
 
                     <div className="ad-menu-title">MENU OPERASIONAL</div>
 
-                    <nav className="ad-navigation">
-                        {adminMenus.map(item => {
-                            const Icon = item.icon;
-                            const active = item.id === 'dashboard';
+                    
+<nav className="ad-navigation">
+    {adminMenus.map(item => {
+        const Icon = item.icon;
+        const active = item.id === 'dashboard';
 
-                            return (
-                                <div
-                                    key={item.id}
-                                    className={`ad-menu-item ${active ? 'active' : 'upcoming'}`}
-                                    title={active ? 'Dashboard aktif' : 'Modul akan diaktifkan pada tahap berikutnya'}
-                                >
-                                    <Icon size={19} />
-                                    <span>{item.label}</span>
-                                    {active && <span className="ad-active-dot" />}
-                                    {!active && <span className="ad-coming">Segera</span>}
-                                </div>
-                            );
-                        })}
-                    </nav>
+        return item.url ? (
+            <button
+                key={item.id}
+                type="button"
+                className="ad-menu-item upcoming ad-menu-link"
+                onClick={() => {
+                    router.visit(item.url);
+                    setSidebarOpen(false);
+                }}
+            >
+                <Icon size={19} />
+                <span>{item.label}</span>
+            </button>
+        ) : (
+            <div
+                key={item.id}
+                className={`ad-menu-item ${active ? 'active' : 'upcoming'}`}
+                title={active
+                    ? 'Dashboard aktif'
+                    : 'Modul akan diaktifkan pada tahap berikutnya'}
+            >
+                <Icon size={19} />
+                <span>{item.label}</span>
+                {active && <span className="ad-active-dot" />}
+                {!active && <span className="ad-coming">Segera</span>}
+            </div>
+        );
+    })}
+</nav>
+
 
                     <div className="ad-sidebar-bottom">
                         <div className="ad-sidebar-note">

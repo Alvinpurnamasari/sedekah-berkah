@@ -129,19 +129,31 @@ return;
     }
 }
 
+function toggleStatus(user) {
+    console.log('DATA USER UNTUK UBAH STATUS:', user);
+    console.log('ID USER:', user?.id);
 
-    function toggleStatus(user) {
-        const action = user.status === 'active'
-            ? 'menonaktifkan'
-            : 'mengaktifkan';
+    const action = user.status === 'active'
+        ? 'menonaktifkan'
+        : 'mengaktifkan';
 
-        if (!confirm(`Yakin ingin ${action} akun ${user.name}?`)) {
-            return;
-        }
-
-        router.patch(`/superadmin/pengguna/${user.id}/status`);
+    if (!confirm(`Yakin ingin ${action} akun ${user.name}?`)) {
+        return;
     }
 
+    const url = `/superadmin/pengguna/${user.id}/status`;
+
+console.log('URL PATCH YANG AKAN DIKIRIM:', url);
+
+router.patch(url, {}, {
+    onSuccess: () => {
+        console.log('Status pengguna berhasil diperbarui.');
+    },
+    onError: (errors) => {
+        console.error('Gagal memperbarui status:', errors);
+    },
+});
+}
     return (
         <SuperadminLayout
             title="Manajemen Pengguna"
@@ -273,6 +285,7 @@ return;
                                                     </button>
 
                                                     <button
+                                                        type="button"
                                                         title="Ubah status"
                                                         onClick={() => toggleStatus(user)}
                                                     >
