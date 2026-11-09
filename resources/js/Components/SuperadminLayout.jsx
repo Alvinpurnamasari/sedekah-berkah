@@ -12,7 +12,7 @@ const menus = [
     { id: 'users', label: 'Manajemen Pengguna', icon: Users, url: '/superadmin/pengguna' },
     { id: 'programs', label: 'Manajemen Program', icon: Megaphone, url: '/superadmin/program' },
     { id: 'finance', label: 'Manajemen Keuangan', icon: Wallet, url: '/superadmin/keuangan' },
-    { id: 'transactions', label: 'Manajemen Transaksi', icon: Receipt },
+    { id: 'transactions', label: 'Manajemen Transaksi', icon: Receipt, url: '/superadmin/transaksi' },
     { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart },
     { id: 'expenses', label: 'Pengeluaran & Persetujuan', icon: ClipboardList, url: '/superadmin/pengeluaran' },
     { id: 'reports', label: 'Laporan & Transparansi', icon: ChartNoAxesCombined },

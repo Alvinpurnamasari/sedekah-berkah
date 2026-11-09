@@ -9,6 +9,7 @@ use App\Http\Controllers\Superadmin\UserManagementController;
 use App\Http\Controllers\Superadmin\CampaignManagementController;
 use App\Http\Controllers\Superadmin\FinanceController;
 use App\Http\Controllers\Superadmin\AuditLogController;
+use App\Http\Controllers\Superadmin\TransactionController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -208,7 +209,10 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     
     Route::post('/program', [CampaignManagementController::class, 'store'])
         ->name('campaigns.store');
-    
+        
+    Route::get('/program/{id}', [CampaignManagementController::class, 'show'])
+        ->name('campaigns.show');
+
     Route::get('/program/{id}/edit', [CampaignManagementController::class, 'edit'])
         ->name('campaigns.edit');
     
@@ -220,6 +224,12 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
     Route::get('/keuangan', [FinanceController::class, 'index'])
         ->name('finance.index');
+  
+    Route::get('/transaksi', [TransactionController::class, 'index'])
+        ->name('transactions.index');
+       
+    Route::get('/transaksi/{id}', [TransactionController::class, 'show'])
+        ->name('transactions.show');
 
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
@@ -238,6 +248,7 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])
         ->name('audit.index');
+
 });
 
 });

@@ -173,13 +173,12 @@ export default function CampaignIndex({
                                             <td>
                                                 <div className="sc-actions">
                                                     <button
-                                                        title="Lihat program publik"
-                                                        onClick={() => router.visit(`/program/${campaign.slug}`)}
-                                                        disabled={campaign.status === 'draft'}
+                                                        type="button"
+                                                        title="Detail program"
+                                                        onClick={() => router.visit(`/superadmin/program/${campaign.id}`)}
                                                     >
                                                         <Eye size={16} />
                                                     </button>
-
                                                     <button
                                                         title="Edit program"
                                                         onClick={() => router.visit(`/superadmin/program/${campaign.id}/edit`)}

@@ -60,6 +60,34 @@ class CampaignManagementController extends Controller
         ]);
     }
 
+    
+    /**
+     * Detail program khusus Superadmin.
+     */
+    public function show(string $id)
+    {
+        $campaign = Campaign::with([
+            'category',
+            'beneficiaryTargets',
+        ])
+            ->withSum([
+                'donations as collected_amount' => function ($query) {
+                    $query->where('payment_status', 'paid');
+                },
+            ], 'donation_amount')
+            ->withCount([
+                'donations as donor_count' => function ($query) {
+                    $query->where('payment_status', 'paid');
+                },
+            ])
+            ->findOrFail($id);
+
+        return Inertia::render('Superadmin/Campaigns/Show', [
+            'campaign' => $campaign,
+        ]);
+    }
+
+
     /**
      * Form tambah program.
      */
