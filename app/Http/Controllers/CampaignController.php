@@ -20,12 +20,14 @@ class CampaignController extends Controller
         ])
         ->withSum([
             'donations as collected_amount' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ], 'donation_amount')
         ->withCount([
             'donations as donor_count' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ])
         ->whereIn('status', ['published', 'active'])
@@ -49,12 +51,14 @@ class CampaignController extends Controller
         ])
         ->withSum([
             'donations as collected_amount' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ], 'donation_amount')
         ->withCount([
             'donations as donor_count' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ])
         ->where('slug', $slug)
@@ -77,12 +81,14 @@ class CampaignController extends Controller
         ])
         ->withSum([
             'donations as collected_amount' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ], 'donation_amount')
         ->withCount([
             'donations as donor_count' => function ($query) {
-                $query->where('payment_status', 'paid');
+                $query->where('payment_status', 'paid')
+                    ->where('is_simulated', false);
             },
         ])
         ->where('slug', $slug)

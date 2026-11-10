@@ -56,6 +56,19 @@ export default function TransactionShow({
         Number(transaction.donation_amount || 0) +
         Number(transaction.operational_support || 0);
 
+        const simulateStatus = (status) => {
+            if (!window.confirm(
+                'Apakah kamu yakin ingin mengubah status transaksi ini melalui simulasi? Ini bukan pembayaran sungguhan.'
+            )) {
+                return;
+            }
+        
+            router.post(
+                `/superadmin/transaksi/${transaction.id}/simulasi-status`,
+                { status }
+            );
+        };
+
     return (
         <SuperadminLayout activeMenu="transactions">
             <Head title={`Detail ${transaction.donation_code}`} />
@@ -101,10 +114,26 @@ export default function TransactionShow({
                             </p>
                         </div>
 
-                        <span className={`st-status ${transaction.payment_status}`}>
-                            {statusLabels[transaction.payment_status] ||
-                                transaction.payment_status}
-                        </span>
+                             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                                <span className={`st-status ${transaction.payment_status}`}>
+                                    {statusLabels[transaction.payment_status] ||
+                                        transaction.payment_status}
+                                </span>
+
+                                {transaction.is_simulated && (
+                                    <span style={{
+                                        background: '#fff1cc',
+                                        color: '#946200',
+                                        padding: '5px 10px',
+                                        borderRadius: 6,
+                                        fontSize: 11,
+                                        fontWeight: 700,
+                                        letterSpacing: '0.5px',
+                                    }}>
+                                        SIMULASI — BUKAN PEMBAYARAN NYATA
+                                    </span>
+                                )}
+                            </div>
                     </div>
 
                     <div className="st-detail-list">
@@ -240,6 +269,50 @@ export default function TransactionShow({
                 </section>
 
                 {/* RIWAYAT STATUS */}
+                {/* SIMULASI STATUS TRANSAKSI */}
+{transaction.payment_status === 'pending' && (
+    <section className="st-panel" style={{ marginTop: 24 }}>
+        <div className="st-panel-heading">
+            <div>
+                <h2>Simulasi Status Transaksi</h2>
+                <p>
+                    Khusus pengujian lokal. Tidak memproses pembayaran sungguhan.
+                </p>
+            </div>
+        </div>
+
+        <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 12,
+            padding: '0 25px 24px'
+        }}>
+            <button
+                type="button"
+                onClick={() => simulateStatus('paid')}
+                style={{ background: '#16845c', color: 'white', padding: '12px 18px', border: 0, borderRadius: 8, cursor: 'pointer' }}
+            >
+                Tandai Berhasil (Simulasi)
+            </button>
+
+            <button
+                type="button"
+                onClick={() => simulateStatus('failed')}
+                style={{ background: '#dc4444', color: 'white', padding: '12px 18px', border: 0, borderRadius: 8, cursor: 'pointer' }}
+            >
+                Tandai Gagal (Simulasi)
+            </button>
+
+            <button
+                type="button"
+                onClick={() => simulateStatus('expired')}
+                style={{ background: '#8b6b32', color: 'white', padding: '12px 18px', border: 0, borderRadius: 8, cursor: 'pointer' }}
+            >
+                Tandai Kedaluwarsa (Simulasi)
+            </button>
+        </div>
+    </section>
+)}
                 <section className="st-panel" style={{ marginTop: 24 }}>
                     <div className="st-panel-heading">
                         <div>

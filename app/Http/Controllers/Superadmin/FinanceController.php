@@ -11,7 +11,8 @@ class FinanceController extends Controller
     public function index()
     {
         $income = DB::table('donations')
-            ->where('payment_status', 'paid')
+        ->where('payment_status', 'paid')
+        ->where('is_simulated', false)
             ->selectRaw('
                 COALESCE(SUM(donation_amount), 0) as donation_total,
                 COALESCE(SUM(operational_support), 0) as operational_total,
@@ -34,7 +35,8 @@ class FinanceController extends Controller
         $campaignFinance = DB::table('campaigns')
             ->leftJoin('donations', function ($join) {
                 $join->on('campaigns.id', '=', 'donations.campaign_id')
-                    ->where('donations.payment_status', '=', 'paid');
+                ->where('donations.payment_status', '=', 'paid')
+                ->where('donations.is_simulated', '=', false);
             })
             ->select('campaigns.id', 'campaigns.title')
             ->selectRaw('
@@ -47,6 +49,7 @@ class FinanceController extends Controller
             ->get();
 
         $recentDonations = DB::table('donations')
+            ->where('donations.is_simulated', false)
             ->join('campaigns', 'campaigns.id', '=', 'donations.campaign_id')
             ->select(
                 'donations.id',

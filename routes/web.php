@@ -10,6 +10,8 @@ use App\Http\Controllers\Superadmin\CampaignManagementController;
 use App\Http\Controllers\Superadmin\FinanceController;
 use App\Http\Controllers\Superadmin\AuditLogController;
 use App\Http\Controllers\Superadmin\TransactionController;
+use App\Http\Controllers\Superadmin\DistributionController;
+
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -32,20 +34,23 @@ Route::get('/program', function () {
             $query->from('donations')
                 ->selectRaw('COALESCE(SUM(donation_amount), 0)')
                 ->whereColumn('donations.campaign_id', 'campaigns.id')
-                ->where('donations.payment_status', 'paid');
+                ->where('donations.payment_status', 'paid')
+                ->where('donations.is_simulated', false);
         }, 'collected_amount')
         ->selectSub(function ($query) {
             $query->from('donations')
                 ->selectRaw('COUNT(*)')
                 ->whereColumn('donations.campaign_id', 'campaigns.id')
-                ->where('donations.payment_status', 'paid');
+                ->where('donations.payment_status', 'paid')
+                ->where('donations.is_simulated', false);
         }, 'donation_count')
         ->selectSub(function ($query) {
             $query->from('donations')
                 ->join('beneficiary_targets', 'donations.beneficiary_target_id', '=', 'beneficiary_targets.id')
                 ->selectRaw("GROUP_CONCAT(DISTINCT beneficiary_targets.name SEPARATOR '||')")
                 ->whereColumn('donations.campaign_id', 'campaigns.id')
-                ->where('donations.payment_status', 'paid');
+                ->where('donations.payment_status', 'paid')
+                ->where('donations.is_simulated', false);
         }, 'beneficiary_names')
         ->where('campaigns.status', '!=', 'draft')
         ->orderByDesc('campaigns.created_at')
@@ -108,6 +113,7 @@ Route::middleware('auth')->group(function () {
     
             'verifiedFunds' => DB::table('donations')
                 ->where('payment_status', 'paid')
+                ->where('is_simulated', false)
                 ->sum('donation_amount'),
     
             'distributionSchedules' => DB::table('distributions')
@@ -133,9 +139,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/superadmin', function () {
 
         // Total dana masuk dari donasi yang sudah dibayar
+       // Total dana masuk dari pembayaran riil
         $totalDanaMasuk = DB::table('donations')
-            ->where('payment_status', 'paid')
-            ->sum(DB::raw('donation_amount + operational_support'));
+        ->where('payment_status', 'paid')
+        ->where('is_simulated', false)
+        ->sum(DB::raw('donation_amount + operational_support'));
     
         // Total dana yang sudah disalurkan
         $danaDisalurkan = DB::table('distributions')
@@ -151,6 +159,7 @@ Route::middleware('auth')->group(function () {
         // Total donatur unik yang sudah berhasil berdonasi
         $totalDonatur = DB::table('donations')
             ->where('payment_status', 'paid')
+            ->where('is_simulated', false)
             ->selectRaw("
                 COUNT(DISTINCT COALESCE(
                     user_id,
@@ -164,6 +173,7 @@ Route::middleware('auth')->group(function () {
         // Total transaksi berhasil
         $transaksiBerhasil = DB::table('donations')
             ->where('payment_status', 'paid')
+            ->where('is_simulated', false)
             ->count();
     
         // Pengeluaran yang masih menunggu persetujuan
@@ -231,6 +241,18 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::get('/transaksi/{id}', [TransactionController::class, 'show'])
         ->name('transactions.show');
 
+    Route::post('/transaksi/{id}/simulasi-status', [TransactionController::class, 'simulateStatus'])
+        ->name('transactions.simulate-status');
+
+    Route::get('/penyaluran', [DistributionController::class, 'index'])
+        ->name('distributions.index');
+
+    Route::get('/penyaluran/tambah', [DistributionController::class, 'create'])
+        ->name('distributions.create');
+
+    Route::post('/penyaluran', [DistributionController::class, 'store'])
+        ->name('distributions.store');
+        
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
             'index'

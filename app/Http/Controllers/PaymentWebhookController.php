@@ -71,55 +71,105 @@ class PaymentWebhookController extends Controller
             ], 200);
         }
 
-        DB::transaction(function () use ($payload, $providerStatus, $newStatus) {
+        
+$ignoredSimulation = DB::transaction(function () use ($payload, $providerStatus, $newStatus) {
 
-            // Kunci donasi agar webhook bersamaan tidak mengubah data secara bersamaan.
-            $donation = Donation::where(
-                'donation_code',
-                $payload['order_id']
-            )->lockForUpdate()->first();
+    // Kunci donasi agar webhook bersamaan tidak mengubah data secara bersamaan.
+    $donation = Donation::where(
+        'donation_code',
+        $payload['order_id']
+    )->lockForUpdate()->first();
+    
+    if (!$donation) {
+        abort(404, 'Donation not found.');
+    }
+    
+    // Tolak transaksi simulasi.
+    if ($donation->is_simulated) {
+        return true;
+    }
+    
+    // Pastikan catatan transaksi gateway tersedia.
+    $payment = DB::table('payment_transactions')
+        ->where('donation_id', $donation->id)
+        ->where('order_id', $payload['order_id'])
+        ->where('provider', 'midtrans')
+        ->lockForUpdate()
+        ->first();
+    
+    if (!$payment) {
+        abort(404, 'Payment transaction not found.');
+    }
+    
+    // Pastikan nominal dari Midtrans sama dengan nominal internal.
+    $expectedAmount = (int) $donation->donation_amount
+        + (int) $donation->operational_support;
+    
+    $receivedAmount = (float) $payload['gross_amount'];
+    
+    if (
+        !is_numeric($payload['gross_amount']) ||
+        !is_finite($receivedAmount) ||
+        $receivedAmount !== (float) $expectedAmount
+    ) {
+        abort(422, 'Payment amount mismatch.');
+    }
 
-            if (!$donation) {
-                abort(404, 'Donation not found.');
-            }
+    if (!$donation) {
+        abort(404, 'Donation not found.');
+    }
 
-            $oldStatus = $donation->payment_status;
+    // Jangan pernah memproses webhook untuk transaksi simulasi.
+    if ($donation->is_simulated) {
+        return true;
+    }
 
-            // Simpan perubahan hanya jika status memang berbeda.
-            if ($oldStatus !== $newStatus) {
-                $donation->update([
-                    'payment_status' => $newStatus,
-                ]);
+    $oldStatus = $donation->payment_status;
 
-                DB::table('payment_status_histories')->insert([
-                    'donation_id' => $donation->id,
-                    'old_status' => $oldStatus,
-                    'new_status' => $newStatus,
-                    'provider_status' => $providerStatus,
-                    'transaction_id' => $payload['transaction_id'] ?? null,
-                    'payment_method' => $payload['payment_type'] ?? null,
-                    'metadata' => json_encode([
-                        'order_id' => $payload['order_id'],
-                        'status_code' => $payload['status_code'],
-                        'gross_amount' => $payload['gross_amount'],
-                        'fraud_status' => $payload['fraud_status'] ?? null,
-                    ]),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+    // Simpan perubahan hanya jika status memang berbeda.
+    if ($oldStatus !== $newStatus) {
+        $donation->update([
+            'payment_status' => $newStatus,
+        ]);
 
-            // Perbarui data transaksi gateway jika catatannya tersedia.
-            DB::table('payment_transactions')
-                ->where('order_id', $payload['order_id'])
-                ->update([
-                    'transaction_id' => $payload['transaction_id'] ?? null,
-                    'payment_method' => $payload['payment_type'] ?? null,
-                    'status' => $newStatus,
-                    'raw_response' => json_encode($payload),
-                    'updated_at' => now(),
-                ]);
-        });
+        DB::table('payment_status_histories')->insert([
+            'donation_id' => $donation->id,
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+            'provider_status' => $providerStatus,
+            'transaction_id' => $payload['transaction_id'] ?? null,
+            'payment_method' => $payload['payment_type'] ?? null,
+            'metadata' => json_encode([
+                'order_id' => $payload['order_id'],
+                'status_code' => $payload['status_code'],
+                'gross_amount' => $payload['gross_amount'],
+                'fraud_status' => $payload['fraud_status'] ?? null,
+            ]),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    // Perbarui data transaksi gateway jika catatannya tersedia.
+    DB::table('payment_transactions')
+        ->where('order_id', $payload['order_id'])
+        ->update([
+            'transaction_id' => $payload['transaction_id'] ?? null,
+            'payment_method' => $payload['payment_type'] ?? null,
+            'status' => $newStatus,
+            'raw_response' => json_encode($payload),
+            'updated_at' => now(),
+        ]);
+
+    return false;
+});
+
+if ($ignoredSimulation) {
+    return response()->json([
+        'message' => 'Simulated transaction ignored.',
+    ], 200);
+}
+
 
         return response()->json([
             'message' => 'OK',

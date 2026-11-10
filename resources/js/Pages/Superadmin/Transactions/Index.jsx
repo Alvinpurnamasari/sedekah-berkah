@@ -252,9 +252,25 @@ export default function TransactionIndex({
                                                 <td>{rupiah(item.operational_support)}</td>
                                                 <td><strong>{rupiah(total)}</strong></td>
                                                 <td>
-                                                    <span className={`st-status ${item.payment_status}`}>
-                                                        {statusLabels[item.payment_status] || item.payment_status}
-                                                    </span>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 6 }}>
+                                                        <span className={`st-status ${item.payment_status}`}>
+                                                            {statusLabels[item.payment_status] || item.payment_status}
+                                                        </span>
+
+                                                        {Boolean(Number(item.is_simulated)) && (
+                                                            <span style={{
+                                                                background: '#fff1cc',
+                                                                color: '#946200',
+                                                                padding: '4px 8px',
+                                                                borderRadius: 6,
+                                                                fontSize: 10,
+                                                                fontWeight: 700,
+                                                                letterSpacing: '0.5px',
+                                                            }}>
+                                                                SIMULASI
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td>{dateFormat(item.created_at)}</td>
                                                 <td>
