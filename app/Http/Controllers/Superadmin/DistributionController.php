@@ -122,4 +122,135 @@ public function store(Request $request)
         ->with('success', 'Rencana penyaluran berhasil dibuat.');
 }
 
+
+public function show(string $id)
+{
+    $distribution = DB::table('distributions')
+        ->leftJoin(
+            'campaigns',
+            'distributions.campaign_id',
+            '=',
+            'campaigns.id'
+        )
+        ->where('distributions.id', $id)
+        ->select(
+            'distributions.*',
+            'campaigns.title as campaign_title'
+        )
+        ->first();
+
+    abort_if(!$distribution, 404);
+
+    $expenses = DB::table('expenses')
+        ->where('distribution_id', $id)
+        ->orderByDesc('created_at')
+        ->get();
+
+    $expenseSummary = [
+        'total' => (int) $expenses->sum('amount'),
+        'approved' => (int) $expenses
+            ->where('approval_status', 'approved')
+            ->sum('amount'),
+        'pending' => (int) $expenses
+            ->where('approval_status', 'pending')
+            ->sum('amount'),
+    ];
+
+    return Inertia::render('Superadmin/Distributions/Show', [
+        'distribution' => $distribution,
+        'expenses' => $expenses,
+        'expenseSummary' => $expenseSummary,
+    ]);
+}
+
+public function edit(string $id)
+{
+    $distribution = DB::table('distributions')
+        ->where('id', $id)
+        ->first();
+
+    abort_if(!$distribution, 404);
+
+    abort_if(
+        $distribution->status !== 'planned' ||
+        $distribution->report_status !== 'draft',
+        403,
+        'Rencana tidak dapat diedit setelah pelaksanaan atau pelaporan dimulai.'
+    );
+
+    $campaigns = DB::table('campaigns')
+        ->whereIn('status', ['active', 'published'])
+        ->orderBy('title')
+        ->get(['id', 'title']);
+
+    return Inertia::render('Superadmin/Distributions/Edit', [
+        'distribution' => $distribution,
+        'campaigns' => $campaigns,
+    ]);
+}
+
+public function update(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'campaign_id' => ['required', 'exists:campaigns,id'],
+        'title' => ['required', 'string', 'max:255'],
+        'distribution_date' => ['required', 'date'],
+        'location' => ['required', 'string', 'max:255'],
+        'planned_quantity' => ['required', 'integer', 'min:1'],
+    ]);
+
+    DB::transaction(function () use ($validated, $id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            $distribution->status !== 'planned' ||
+            $distribution->report_status !== 'draft',
+            403,
+            'Rencana tidak dapat diedit setelah pelaksanaan atau pelaporan dimulai.'
+        );
+
+        $before = [
+            'campaign_id' => $distribution->campaign_id,
+            'title' => $distribution->title,
+            'distribution_date' => $distribution->distribution_date,
+            'location' => $distribution->location,
+            'planned_quantity' => $distribution->planned_quantity,
+        ];
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'campaign_id' => $validated['campaign_id'],
+                'title' => $validated['title'],
+                'distribution_date' => $validated['distribution_date'],
+                'location' => $validated['location'],
+                'planned_quantity' => $validated['planned_quantity'],
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_updated',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'before' => $before,
+                'after' => $validated,
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Rencana penyaluran berhasil diperbarui.');
+}
+
 }

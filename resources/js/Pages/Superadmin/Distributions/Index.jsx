@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import SuperadminLayout from '../../../Components/SuperadminLayout';
 import {
     HandHeart,
@@ -202,6 +202,7 @@ export default function Index({
                                     'PENERIMA',
                                     'TOTAL BIAYA',
                                     'STATUS',
+                                    'AKSI',
                                 ].map((heading) => (
                                     <th key={heading} style={{
                                         padding: 14,
@@ -238,6 +239,18 @@ export default function Index({
                                         </td>
                                         <td style={{ padding: 14 }}>
                                             {statusLabels[item.status] || item.status}
+                                        </td>
+                                        <td style={{ padding: 14 }}>
+                                            <Link
+                                                href={`/superadmin/penyaluran/${item.id}`}
+                                                style={{
+                                                    color: '#16734f',
+                                                    textDecoration: 'none',
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                Lihat Detail
+                                            </Link>
                                         </td>
                                     </tr>
                                 ))
