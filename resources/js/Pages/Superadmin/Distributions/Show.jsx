@@ -1,5 +1,5 @@
 import React from 'react';
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import SuperadminLayout from '../../../Components/SuperadminLayout';
 import {
     ArrowLeft,
@@ -10,6 +10,8 @@ import {
     Wallet,
     ClipboardList,
     ReceiptText,
+    Image,
+    Upload,
 } from 'lucide-react';
 
 const rupiah = (value) =>
@@ -43,8 +45,52 @@ export default function Show({
     distribution,
     expenses,
     expenseSummary,
+    documents,
 }) {
     const { flash } = usePage().props;
+    const {
+        data,
+        setData,
+        post,
+        processing,
+        errors,
+    } = useForm({
+        actual_quantity: distribution.actual_quantity || 0,
+        total_cost: distribution.total_cost || 0,
+        status: distribution.status === 'ongoing'
+            ? 'ongoing'
+            : 'ongoing',
+    });
+    
+    const submitRealization = (event) => {
+        event.preventDefault();
+    
+        post(`/superadmin/penyaluran/${distribution.id}/realisasi`);
+    };
+    const {
+        data: documentData,
+        setData: setDocumentData,
+        post: postDocument,
+        processing: uploadingDocument,
+        errors: documentErrors,
+        reset: resetDocument,
+    } = useForm({
+        photo: null,
+        caption: '',
+        document_date: '',
+    });
+    
+    const submitDocument = (event) => {
+        event.preventDefault();
+    
+        postDocument(
+            `/superadmin/penyaluran/${distribution.id}/dokumentasi`,
+            {
+                forceFormData: true,
+                onSuccess: () => resetDocument(),
+            }
+        );
+    };
     const info = [
         {
             label: 'Program',
@@ -224,6 +270,343 @@ export default function Show({
                     })}
                 </div>
             </div>
+            {['planned', 'ongoing'].includes(distribution.status) && (
+                <div style={{
+                    background: 'white',
+                    border: '1px solid #e5eee9',
+                    borderRadius: 14,
+                    padding: 24,
+                    marginBottom: 20,
+                }}>
+                    <h3 style={{ marginTop: 0 }}>
+                        Realisasi Penyaluran
+                    </h3>
+
+                    <p style={{ color: '#82958c', marginTop: 0 }}>
+                        Catat hasil pelaksanaan kegiatan setelah penyaluran dilakukan.
+                    </p>
+
+                    <form onSubmit={submitRealization}>
+                        <div style={{ marginBottom: 18 }}>
+                            <label style={{
+                                display: 'block',
+                                fontWeight: 600,
+                                marginBottom: 8,
+                            }}>
+                                Jumlah Penerima Aktual
+                            </label>
+
+                            <input
+                                type="number"
+                                min="0"
+                                value={data.actual_quantity}
+                                onChange={(e) =>
+                                    setData('actual_quantity', e.target.value)
+                                }
+                                style={{
+                                    width: '100%',
+                                    padding: 12,
+                                    border: '1px solid #dce7e1',
+                                    borderRadius: 8,
+                                    boxSizing: 'border-box',
+                                }}
+                            />
+
+                            {errors.actual_quantity && (
+                                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                                    {errors.actual_quantity}
+                                </p>
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: 18 }}>
+                            <label style={{
+                                display: 'block',
+                                fontWeight: 600,
+                                marginBottom: 8,
+                            }}>
+                                Total Biaya Aktual (Rp)
+                            </label>
+
+                            <input
+                                type="number"
+                                min="0"
+                                value={data.total_cost}
+                                onChange={(e) =>
+                                    setData('total_cost', e.target.value)
+                                }
+                                style={{
+                                    width: '100%',
+                                    padding: 12,
+                                    border: '1px solid #dce7e1',
+                                    borderRadius: 8,
+                                    boxSizing: 'border-box',
+                                }}
+                            />
+
+                            {errors.total_cost && (
+                                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                                    {errors.total_cost}
+                                </p>
+                            )}
+                        </div>
+
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{
+                                display: 'block',
+                                fontWeight: 600,
+                                marginBottom: 8,
+                            }}>
+                                Status Pelaksanaan
+                            </label>
+
+                            <select
+                                value={data.status}
+                                onChange={(e) =>
+                                    setData('status', e.target.value)
+                                }
+                                style={{
+                                    width: '100%',
+                                    padding: 12,
+                                    border: '1px solid #dce7e1',
+                                    borderRadius: 8,
+                                    background: 'white',
+                                }}
+                            >
+                                <option value="ongoing">Sedang Berlangsung</option>
+                                <option value="completed">Selesai</option>
+                            </select>
+
+                            {errors.status && (
+                                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                                    {errors.status}
+                                </p>
+                            )}
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            style={{
+                                padding: '12px 20px',
+                                background: processing ? '#8ab9a2' : '#16734f',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontWeight: 600,
+                                cursor: processing ? 'not-allowed' : 'pointer',
+                            }}
+                        >
+                            {processing ? 'Menyimpan...' : 'Simpan Realisasi'}
+                        </button>
+                    </form>
+                </div>
+            )}
+
+<div style={{
+    background: 'white',
+    border: '1px solid #e5eee9',
+    borderRadius: 14,
+    padding: 24,
+    marginBottom: 20,
+}}>
+    <h3 style={{ marginTop: 0 }}>
+        <Image
+            size={20}
+            style={{ verticalAlign: 'middle', marginRight: 8 }}
+        />
+        Dokumentasi Kegiatan
+    </h3>
+
+    <p style={{ color: '#82958c', marginTop: 0 }}>
+        Unggah foto sebagai bukti pelaksanaan kegiatan penyaluran.
+    </p>
+
+    <form onSubmit={submitDocument}>
+        <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
+                Foto Kegiatan *
+            </label>
+
+            <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) =>
+                    setDocumentData('photo', e.target.files[0] || null)
+                }
+                required
+            />
+
+            {documentErrors.photo && (
+                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                    {documentErrors.photo}
+                </p>
+            )}
+            <p style={{ color: '#82958c', fontSize: 12 }}>
+                Format JPG, PNG, atau WEBP. Maksimal 5 MB.
+            </p>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
+                Keterangan Foto
+            </label>
+
+            <input
+                type="text"
+                value={documentData.caption}
+                onChange={(e) => setDocumentData('caption', e.target.value)}
+                placeholder="Contoh: Pembagian paket makanan kepada penerima"
+                style={{
+                    width: '100%',
+                    padding: 12,
+                    border: '1px solid #dce7e1',
+                    borderRadius: 8,
+                    boxSizing: 'border-box',
+                }}
+            />
+
+            {documentErrors.caption && (
+                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                    {documentErrors.caption}
+                </p>
+            )}
+        </div>
+
+        <div style={{ marginBottom: 18 }}>
+            <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
+                Tanggal Dokumentasi
+            </label>
+
+            <input
+                type="date"
+                value={documentData.document_date}
+                onChange={(e) => setDocumentData('document_date', e.target.value)}
+                style={{
+                    padding: 12,
+                    border: '1px solid #dce7e1',
+                    borderRadius: 8,
+                }}
+            />
+
+            {documentErrors.document_date && (
+                <p style={{ color: '#dc2626', fontSize: 13 }}>
+                    {documentErrors.document_date}
+                </p>
+            )}
+        </div>
+
+        <button
+            type="submit"
+            disabled={uploadingDocument}
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '12px 20px',
+                background: uploadingDocument ? '#8ab9a2' : '#16734f',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 600,
+                cursor: uploadingDocument ? 'not-allowed' : 'pointer',
+            }}
+        >
+            <Upload size={17} />
+            {uploadingDocument ? 'Mengunggah...' : 'Upload Dokumentasi'}
+        </button>
+    </form>
+
+    <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+        gap: 16,
+        marginTop: 28,
+    }}>
+        {documents.length > 0 ? (
+            documents.map((document) => (
+                <div
+                    key={document.id}
+                    style={{
+                        border: '1px solid #e5eee9',
+                        borderRadius: 10,
+                        overflow: 'hidden',
+                    }}
+                >
+                    <a
+                        href={`/storage/${document.file_path}`}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        <img
+                            src={`/storage/${document.file_path}`}
+                            alt={document.caption || 'Dokumentasi penyaluran'}
+                            style={{
+                                width: '100%',
+                                height: 180,
+                                objectFit: 'cover',
+                                display: 'block',
+                            }}
+                        />
+                    </a>
+
+                    <div style={{ padding: 12 }}>
+                        <strong style={{ fontSize: 14 }}>
+                            {document.caption || 'Dokumentasi kegiatan'}
+                        </strong>
+
+                        <p style={{
+                            color: '#82958c',
+                            fontSize: 12,
+                            marginBottom: 0,
+                        }}>
+                            {document.document_date || 'Tanggal tidak dicantumkan'}
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const confirmed = window.confirm(
+                                    'Apakah kamu yakin ingin menghapus dokumentasi ini? Foto yang dihapus tidak dapat dikembalikan.'
+                                );
+
+                                if (confirmed) {
+                                    router.delete(
+                                        `/superadmin/penyaluran/${distribution.id}/dokumentasi/${document.id}`,
+                                        {
+                                            preserveScroll: true,
+                                        }
+                                    );
+                                }
+                            }}
+                            style={{
+                                marginTop: 12,
+                                padding: '8px 12px',
+                                background: '#fee2e2',
+                                color: '#b91c1c',
+                                border: 'none',
+                                borderRadius: 7,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                width: '100%',
+                            }}
+                        >
+                            Hapus Dokumentasi
+                        </button>
+                    </div>
+                </div>
+            ))
+        ) : (
+            <p style={{
+                color: '#82958c',
+                gridColumn: '1 / -1',
+                textAlign: 'center',
+                padding: 20,
+            }}>
+                Belum ada dokumentasi foto untuk kegiatan ini.
+            </p>
+        )}
+    </div>
+</div>
 
             <div style={{
                 background: 'white',

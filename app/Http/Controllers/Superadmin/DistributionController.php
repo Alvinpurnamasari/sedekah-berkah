@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Superadmin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class DistributionController extends Controller
@@ -123,6 +124,7 @@ public function store(Request $request)
 }
 
 
+
 public function show(string $id)
 {
     $distribution = DB::table('distributions')
@@ -146,6 +148,11 @@ public function show(string $id)
         ->orderByDesc('created_at')
         ->get();
 
+    $documents = DB::table('distribution_documents')
+        ->where('distribution_id', $id)
+        ->orderByDesc('created_at')
+        ->get();
+
     $expenseSummary = [
         'total' => (int) $expenses->sum('amount'),
         'approved' => (int) $expenses
@@ -156,12 +163,19 @@ public function show(string $id)
             ->sum('amount'),
     ];
 
+    $documents = DB::table('distribution_documents')
+        ->where('distribution_id', $id)
+        ->orderByDesc('created_at')
+        ->get();
+
     return Inertia::render('Superadmin/Distributions/Show', [
         'distribution' => $distribution,
         'expenses' => $expenses,
         'expenseSummary' => $expenseSummary,
+        'documents' => $documents,
     ]);
 }
+
 
 public function edit(string $id)
 {
@@ -310,5 +324,94 @@ public function saveRealization(Request $request, string $id)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Realisasi penyaluran berhasil disimpan.');
 }
+public function uploadDocument(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        'caption' => ['nullable', 'string', 'max:255'],
+        'document_date' => ['nullable', 'date'],
+    ]);
 
+    $distribution = DB::table('distributions')
+        ->where('id', $id)
+        ->first();
+
+    abort_if(!$distribution, 404);
+
+    // Simpan foto ke storage/app/public/distribution-documents
+    $filePath = $request->file('photo')
+        ->store('distribution-documents', 'public');
+
+    try {
+        DB::transaction(function () use ($validated, $id, $filePath) {
+            $documentId = DB::table('distribution_documents')->insertGetId([
+                'distribution_id' => $id,
+                'file_path' => $filePath,
+                'caption' => $validated['caption'] ?? null,
+                'document_date' => $validated['document_date'] ?? null,
+                'uploaded_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => 'distribution_document_uploaded',
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'document_id' => $documentId,
+                    'file_path' => $filePath,
+                    'caption' => $validated['caption'] ?? null,
+                ]),
+                'ip_address' => request()->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+    } catch (\Throwable $e) {
+        Storage::disk('public')->delete($filePath);
+        throw $e;
+    }
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Dokumentasi kegiatan berhasil diunggah.');
+}
+public function deleteDocument(string $id, int $documentId)
+{
+    $document = DB::table('distribution_documents')
+        ->where('id', $documentId)
+        ->where('distribution_id', $id)
+        ->first();
+
+    abort_if(!$document, 404);
+
+    DB::transaction(function () use ($document, $id, $documentId) {
+        DB::table('distribution_documents')
+            ->where('id', $documentId)
+            ->delete();
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_document_deleted',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'document_id' => $documentId,
+                'file_path' => $document->file_path,
+                'caption' => $document->caption,
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    Storage::disk('public')->delete($document->file_path);
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Dokumentasi berhasil dihapus.');
+}
 }

@@ -14,7 +14,7 @@ const adminMenus = [
     { id: 'campaigns', label: 'Manajemen Program', icon: Megaphone },
     { id: 'beneficiaries', label: 'Target Penerima', icon: Users },
     { id: 'transactions', label: 'Transaksi', icon: Receipt },
-    { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart },
+    { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart, url: '/admin/penyaluran' },
     { id: 'documentation', label: 'Dokumentasi', icon: Images },
     { id: 'expenses', label: 'Pengeluaran', icon: Wallet, url: '/admin/pengeluaran' },
     { id: 'reports', label: 'Laporan Kegiatan', icon: FileText },

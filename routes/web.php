@@ -11,7 +11,7 @@ use App\Http\Controllers\Superadmin\FinanceController;
 use App\Http\Controllers\Superadmin\AuditLogController;
 use App\Http\Controllers\Superadmin\TransactionController;
 use App\Http\Controllers\Superadmin\DistributionController;
-
+use App\Http\Controllers\Admin\DistributionController as AdminDistributionController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -136,6 +136,31 @@ Route::middleware('auth')->group(function () {
             'store'
         ])->middleware('role:admin')->name('admin.expenses.store');
 
+        // Penyaluran dana oleh Admin
+        Route::middleware('role:admin')
+        ->prefix('admin/penyaluran')
+        ->name('admin.distributions.')
+        ->group(function () {
+
+            Route::get('/', [AdminDistributionController::class, 'index'])
+                ->name('index');
+
+            Route::get('/{id}', [AdminDistributionController::class, 'show'])
+                ->name('show');
+
+            Route::post('/{id}/realisasi', [AdminDistributionController::class, 'saveRealization'])
+                ->name('realization');
+
+            Route::post('/{id}/dokumentasi', [AdminDistributionController::class, 'uploadDocument'])
+                ->name('documents.store');
+
+            Route::delete('/{id}/dokumentasi/{documentId}', [AdminDistributionController::class, 'deleteDocument'])
+                ->name('documents.delete');
+
+            Route::post('/{id}/ajukan-laporan', [AdminDistributionController::class, 'submitReport'])
+                ->name('submit-report');
+        });
+
     Route::get('/superadmin', function () {
 
         // Total dana masuk dari donasi yang sudah dibayar
@@ -258,12 +283,18 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
     Route::get('/penyaluran/{id}/edit', [DistributionController::class, 'edit'])
         ->name('distributions.edit');
-    
+
+    Route::post('/penyaluran/{id}/dokumentasi', [DistributionController::class, 'uploadDocument'
+        ])->name('distributions.documents.store');
+
     Route::put('/penyaluran/{id}', [DistributionController::class, 'update'])
         ->name('distributions.update');
 
     Route::post('/penyaluran/{id}/realisasi', [DistributionController::class, 'saveRealization' ])
         ->name('distributions.realization');
+    
+    Route::delete('/penyaluran/{id}/dokumentasi/{documentId}', [DistributionController::class, 'deleteDocument']
+        )->name('distributions.documents.delete');
 
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
