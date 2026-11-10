@@ -262,6 +262,9 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::put('/penyaluran/{id}', [DistributionController::class, 'update'])
         ->name('distributions.update');
 
+    Route::post('/penyaluran/{id}/realisasi', [DistributionController::class, 'saveRealization' ])
+        ->name('distributions.realization');
+
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
             'index'

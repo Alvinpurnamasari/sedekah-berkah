@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import SuperadminLayout from '../../../Components/SuperadminLayout';
 import {
     ArrowLeft,
@@ -45,6 +44,7 @@ export default function Show({
     expenses,
     expenseSummary,
 }) {
+    const { flash } = usePage().props;
     const info = [
         {
             label: 'Program',
@@ -84,6 +84,22 @@ export default function Show({
             activeMenu="distribution"
         >
             <Head title={`Detail ${distribution.title}`} />
+            {flash?.success && (
+            <div
+                role="alert"
+                style={{
+                    background: '#e8f7ee',
+                    border: '1px solid #b7e4c7',
+                    color: '#176b42',
+                    padding: '14px 18px',
+                    borderRadius: 10,
+                    marginBottom: 20,
+                    fontWeight: 600,
+                }}
+            >
+                ✓ {flash.success}
+            </div>
+        )}
 
             <div style={{ marginBottom: 24 }}>
                 <Link

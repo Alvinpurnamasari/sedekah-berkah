@@ -253,4 +253,62 @@ public function update(Request $request, string $id)
         ->with('success', 'Rencana penyaluran berhasil diperbarui.');
 }
 
+
+public function saveRealization(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'actual_quantity' => ['required', 'integer', 'min:0'],
+        'total_cost' => ['required', 'integer', 'min:0'],
+        'status' => ['required', 'in:ongoing,completed'],
+    ]);
+
+    DB::transaction(function () use ($validated, $id, $request) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            !in_array($distribution->status, ['planned', 'ongoing']),
+            403,
+            'Realisasi tidak dapat diubah untuk kegiatan ini.'
+        );
+
+        $before = [
+            'actual_quantity' => $distribution->actual_quantity,
+            'total_cost' => $distribution->total_cost,
+            'status' => $distribution->status,
+        ];
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'actual_quantity' => $validated['actual_quantity'],
+                'total_cost' => $validated['total_cost'],
+                'status' => $validated['status'],
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_realization_updated',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'before' => $before,
+                'after' => $validated,
+            ]),
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Realisasi penyaluran berhasil disimpan.');
+}
+
 }

@@ -15,9 +15,13 @@ export default function Edit({ distribution, campaigns }) {
 
     const submit = (event) => {
         event.preventDefault();
-        put(`/superadmin/penyaluran/${distribution.id}`);
+    
+        put(`/superadmin/penyaluran/${distribution.id}`, {
+            onSuccess: () => {
+                // Inertia akan mengikuti redirect dari controller.
+            },
+        });
     };
-
     const fieldStyle = {
         width: '100%',
         padding: 12,
