@@ -93,11 +93,18 @@ export default function ReportsIndex({
             color: 'yellow',
         },
         {
-            label: 'Laporan Disetujui',
+            label: 'Laporan Riil Disetujui',
             value: Number(summary.approved_reports || 0).toLocaleString('id-ID'),
             icon: FileText,
             description: 'Laporan yang telah disetujui',
             color: 'dark',
+        },
+        {
+            label: 'Laporan Simulasi',
+            value: Number(summary.simulated_reports || 0).toLocaleString('id-ID'),
+            icon: FileText,
+            description: 'Data pengujian, tidak termasuk laporan riil',
+            color: 'yellow',
         },
     ];
 
@@ -130,6 +137,15 @@ export default function ReportsIndex({
         });
     }
 
+    const exportParams = new URLSearchParams();
+
+if (campaignId) exportParams.set('campaign_id', campaignId);
+if (startDate) exportParams.set('start_date', startDate);
+if (endDate) exportParams.set('end_date', endDate);
+
+const exportQuery = exportParams.toString();
+const exportSuffix = exportQuery ? `?${exportQuery}` : '';
+
     return (
         <SuperadminLayout
             title="Laporan & Transparansi"
@@ -138,18 +154,34 @@ export default function ReportsIndex({
             <Head title="Laporan & Transparansi" />
 
             <div className="sf-page">
-                <div className="sf-heading">
-                    <div>
-                        <span className="sf-eyebrow">
-                            PELAPORAN DAN TRANSPARANSI
-                        </span>
-                        <h1>Laporan & Transparansi</h1>
-                        <p>
-                            Pantau pemasukan donasi, realisasi penyaluran,
-                            penerima manfaat, dan status laporan setiap program.
-                        </p>
-                    </div>
-                </div>
+            <div className="sf-heading">
+    <div>
+        <span className="sf-eyebrow">
+            PELAPORAN DAN TRANSPARANSI
+        </span>
+        <h1>Laporan & Transparansi</h1>
+        <p>
+            Pantau pemasukan donasi, realisasi penyaluran,
+            penerima manfaat, dan status laporan setiap program.
+        </p>
+    </div>
+
+    <div className="flex flex-wrap gap-2">
+        <a
+            href={`/superadmin/laporan/pdf${exportSuffix}`}
+            className="rounded-lg bg-red-700 text-white px-4 py-2 hover:bg-red-800"
+        >
+            Unduh PDF
+        </a>
+
+        <a
+            href={`/superadmin/laporan/excel${exportSuffix}`}
+            className="rounded-lg bg-green-700 text-white px-4 py-2 hover:bg-green-800"
+        >
+            Ekspor Excel
+        </a>
+    </div>
+</div>
 
                 <section className="sf-card-grid">
                     {cards.map((card) => {

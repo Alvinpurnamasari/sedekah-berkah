@@ -2,7 +2,13 @@
   "name": "sedekah-berkah/platform",
   "type": "project",
   "description": "Sedekah Berkah donation platform",
-  "require": {"php": "^8.2", "laravel/framework": "^12.0", "inertiajs/inertia-laravel": "^2.0"},
+  "require": {
+    "php": "^8.2",
+    "barryvdh/laravel-dompdf": "^3.1",
+    "inertiajs/inertia-laravel": "^2.0",
+    "laravel/framework": "^12.0",
+    "phpoffice/phpspreadsheet": "^5.11"
+  },
   "require-dev": {
     "fakerphp/faker": "^1.23",
     "laravel/tinker": "^3.0",

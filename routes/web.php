@@ -326,11 +326,17 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
             'reject'
         ])->name('expenses.reject');
 
-        Route::get('/audit-log', [AuditLogController::class, 'index'])
+    Route::get('/audit-log', [AuditLogController::class, 'index'])
         ->name('audit.index');
 
-        Route::get('/laporan', [ReportController::class, 'index'])
-    ->name('reports.index');
+    Route::get('/laporan', [ReportController::class, 'index'])
+        ->name('reports.index');
+
+    Route::get('/laporan/pdf', [ReportController::class, 'exportPdf'])
+        ->name('reports.pdf');
+
+    Route::get('/laporan/excel', [ReportController::class, 'exportExcel'])
+        ->name('reports.excel');
 
 });
 
