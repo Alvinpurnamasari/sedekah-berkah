@@ -48,6 +48,8 @@ export default function Show({
     documents,
 }) {
     const { flash } = usePage().props;
+    const isSimulated = Boolean(distribution.is_simulated);
+    const isPublished = Boolean(distribution.is_published);     
     const {
         data,
         setData,
@@ -256,6 +258,20 @@ export default function Show({
                         flexWrap: 'wrap',
                         alignItems: 'center',
                     }}>
+                        {isSimulated && (
+                            <span style={{
+                                padding: '8px 12px',
+                                background: '#fff1f2',
+                                color: '#be123c',
+                                border: '1px solid #fecdd3',
+                                borderRadius: 8,
+                                fontSize: 13,
+                                fontWeight: 700,
+                            }}>
+                                DATA SIMULASI
+                            </span>
+                        )}
+
                         <span style={{
                             padding: '8px 12px',
                             background: '#e8f4ed',
@@ -295,6 +311,7 @@ export default function Show({
                             </Link>
                         )}
                     </div>
+                    
                 </div>
 
                 <div style={{
@@ -437,91 +454,111 @@ export default function Show({
                 )}
 
             
+
 {distribution.report_status === 'approved' && (
-                <div style={{
-                    background: '#e8f7ee',
-                    border: '1px solid #b7e4c7',
-                    color: '#176b42',
-                    borderRadius: 12,
-                    padding: 20,
-                    marginBottom: 20,
-                }}>
-                    <strong>✓ Laporan telah disetujui Superadmin.</strong>
-                    <p style={{ marginBottom: 12 }}>
-                        Status publikasi:{' '}
-                        <strong>
-                            {distribution.is_published
-                                ? 'Sudah dipublikasikan'
-                                : 'Belum dipublikasikan'}
-                        </strong>
+    <div style={{
+        background: isSimulated ? '#fff7ed' : '#e8f7ee',
+        border: `1px solid ${isSimulated ? '#fed7aa' : '#b7e4c7'}`,
+        color: isSimulated ? '#9a3412' : '#176b42',
+        borderRadius: 12,
+        padding: 20,
+        marginBottom: 20,
+    }}>
+        <strong>✓ Laporan telah disetujui Superadmin.</strong>
+
+        {isSimulated && (
+            <p style={{ marginBottom: 12 }}>
+                <strong>DATA SIMULASI</strong>
+                <br />
+                Data ini hanya untuk pengujian sistem dan tidak boleh
+                dipublikasikan sebagai laporan kegiatan nyata.
+            </p>
+        )}
+
+        <p style={{ marginBottom: 12 }}>
+            Status publikasi:{' '}
+            <strong>
+                {isPublished
+                    ? 'Sudah dipublikasikan'
+                    : 'Belum dipublikasikan'}
+            </strong>
+        </p>
+
+        {isPublished ? (
+            <button
+                type="button"
+                onClick={unpublishReport}
+                style={{
+                    padding: '11px 18px',
+                    background: '#b91c1c',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                }}
+            >
+                Sembunyikan dari Publik
+            </button>
+        ) : isSimulated ? (
+            <p style={{
+                marginBottom: 0,
+                fontSize: 13,
+                fontWeight: 600,
+            }}>
+                Publikasi dinonaktifkan untuk data simulasi.
+            </p>
+        ) : (
+            <div>
+                <p style={{ marginTop: 0, fontSize: 13 }}>
+                    Pastikan isi laporan dan dokumentasi sudah benar
+                    sebelum ditampilkan kepada masyarakat.
+                </p>
+
+                <button
+                    type="button"
+                    onClick={publishReport}
+                    disabled={
+                        distribution.status !== 'completed' ||
+                        documents.length === 0
+                    }
+                    style={{
+                        padding: '11px 18px',
+                        background:
+                            distribution.status === 'completed' &&
+                            documents.length > 0
+                                ? '#16734f'
+                                : '#9ca3af',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        cursor:
+                            distribution.status === 'completed' &&
+                            documents.length > 0
+                                ? 'pointer'
+                                : 'not-allowed',
+                    }}
+                >
+                    Publikasikan Laporan
+                </button>
+
+                {(distribution.status !== 'completed' ||
+                    documents.length === 0) && (
+                    <p style={{
+                        fontSize: 12,
+                        marginBottom: 0,
+                    }}>
+                        {!documents.length
+                            ? 'Tambahkan dokumentasi terlebih dahulu.'
+                            : 'Penyaluran harus berstatus selesai.'}
                     </p>
+                )}
+            </div>
+        )}
+    </div>
+)}
 
-                    {distribution.is_published ? (
-                        <button
-                            type="button"
-                            onClick={unpublishReport}
-                            style={{
-                                padding: '11px 18px',
-                                background: '#b91c1c',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: 8,
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                            }}
-                        >
-                            Sembunyikan dari Publik
-                        </button>
-                    ) : (
-                        <div>
-                            <p style={{ marginTop: 0, fontSize: 13 }}>
-                                Pastikan isi laporan dan dokumentasi sudah benar
-                                sebelum ditampilkan kepada masyarakat.
-                            </p>
-
-                            <button
-                                type="button"
-                                onClick={publishReport}
-                                disabled={
-                                    distribution.status !== 'completed' ||
-                                    documents.length === 0
-                                }
-                                style={{
-                                    padding: '11px 18px',
-                                    background:
-                                        distribution.status === 'completed' &&
-                                        documents.length > 0
-                                            ? '#16734f'
-                                            : '#9ca3af',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: 8,
-                                    fontWeight: 600,
-                                    cursor:
-                                        distribution.status === 'completed' &&
-                                        documents.length > 0
-                                            ? 'pointer'
-                                            : 'not-allowed',
-                                }}
-                            >
-                                Publikasikan Laporan
-                            </button>
-
-                            {(distribution.status !== 'completed' ||
-                                documents.length === 0) && (
-                                <p style={{
-                                    fontSize: 12,
-                                    marginBottom: 0,
-                                }}>
-                                    {!documents.length
-                                        ? 'Tambahkan dokumentasi terlebih dahulu.'
-                                        : 'Penyaluran harus berstatus selesai.'}
-                                </p>
-                            )}
-                        </div>
-                    )}
-                </div>
-            )}
 
             {['planned', 'ongoing'].includes(distribution.status) && (
                 <div style={{

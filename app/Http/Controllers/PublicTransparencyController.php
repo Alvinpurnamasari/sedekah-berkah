@@ -9,10 +9,13 @@ class PublicTransparencyController extends Controller
 {
     public function index()
     {
+        // Hanya penyaluran nyata yang selesai, disetujui,
+        // dan sudah dipublikasikan.
         $publishedIds = DB::table('distributions')
             ->where('status', 'completed')
             ->where('report_status', 'approved')
             ->where('is_published', true)
+            ->where('is_simulated', false)
             ->select('id');
 
         // Dana terkumpul dari donasi nyata yang sudah dibayar.
@@ -24,6 +27,7 @@ class PublicTransparencyController extends Controller
             )
             ->value('total');
 
+        // Daftar laporan penyaluran yang boleh dilihat publik.
         $reports = DB::table('distributions')
             ->leftJoin(
                 'campaigns',
@@ -34,6 +38,7 @@ class PublicTransparencyController extends Controller
             ->where('distributions.status', 'completed')
             ->where('distributions.report_status', 'approved')
             ->where('distributions.is_published', true)
+            ->where('distributions.is_simulated', false)
             ->select(
                 'distributions.id',
                 'distributions.campaign_id',
@@ -48,42 +53,46 @@ class PublicTransparencyController extends Controller
             ->orderByDesc('distributions.published_at')
             ->get();
 
+        $reportIds = $reports->pluck('id');
+
         $campaignIds = $reports
             ->pluck('campaign_id')
             ->filter()
             ->unique()
             ->values();
 
-        // Total biaya utama dari kegiatan yang dipublikasikan.
+        // Total biaya utama dari penyaluran nyata yang dipublikasikan.
         $distributedTotal = (int) DB::table('distributions')
             ->whereIn('id', $publishedIds)
+            ->where('is_simulated', false)
             ->sum('total_cost');
 
         // Rincian biaya kegiatan yang sudah disetujui.
-        // Rincian ini tidak ditambahkan lagi ke biaya utama.
+        // Tidak dijumlahkan lagi karena sudah termasuk total_cost.
         $detailExpenses = DB::table('expenses')
-            ->whereIn('distribution_id', $reports->pluck('id'))
+            ->whereIn('distribution_id', $reportIds)
             ->where('expense_type', 'distribution_detail')
             ->where('approval_status', 'approved')
+            ->where('is_simulated', false)
             ->select(
                 'id',
                 'distribution_id',
                 'expense_category',
                 'description',
                 'amount',
-                'receipt_file'
             )
             ->orderBy('created_at')
             ->get()
             ->groupBy('distribution_id');
 
-        // Biaya tambahan tidak terikat pada satu penyaluran.
-        // Hubungkan berdasarkan program dan hitung hanya sekali.
+        // Pengeluaran tambahan nyata pada program
+        // yang memiliki laporan penyaluran dipublikasikan.
         $additionalExpenses = DB::table('expenses')
             ->whereIn('campaign_id', $campaignIds)
             ->whereNull('distribution_id')
             ->where('expense_type', 'additional')
             ->where('approval_status', 'approved')
+            ->where('is_simulated', false)
             ->select(
                 'id',
                 'campaign_id',
@@ -97,16 +106,16 @@ class PublicTransparencyController extends Controller
 
         $additionalExpenseTotal = (int) $additionalExpenses->sum('amount');
 
-        // Total penggunaan dana = biaya utama + biaya tambahan.
-        // Rincian distribution_detail tidak dijumlahkan lagi.
+        // Total penggunaan dana.
+        // Rincian distribution_detail tidak dihitung dua kali.
         $totalUse = $distributedTotal + $additionalExpenseTotal;
 
-        // Jumlah penerima hanya dari kegiatan yang dipublikasikan.
+        // Penerima manfaat dari laporan yang dipublikasikan.
         $beneficiaryTotal = (int) $reports->sum('actual_quantity');
 
-        // Dokumentasi foto setiap kegiatan.
+        // Dokumentasi penyaluran.
         $documents = DB::table('distribution_documents')
-            ->whereIn('distribution_id', $reports->pluck('id'))
+            ->whereIn('distribution_id', $reportIds)
             ->orderByDesc('created_at')
             ->get()
             ->groupBy('distribution_id');

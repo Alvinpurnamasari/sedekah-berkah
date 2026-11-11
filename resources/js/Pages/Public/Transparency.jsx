@@ -29,14 +29,16 @@ function ExpenseList({ expenses }) {
             <table style={{
                 width: '100%',
                 borderCollapse: 'collapse',
-                minWidth: 450,
+                minWidth: 350,
             }}>
                 <thead>
-                    <tr style={{ textAlign: 'left', background: '#f5f8f6' }}>
+                    <tr style={{
+                        textAlign: 'left',
+                        background: '#f5f8f6',
+                    }}>
                         <th style={{ padding: 10 }}>Kategori</th>
                         <th style={{ padding: 10 }}>Keterangan</th>
                         <th style={{ padding: 10 }}>Nominal</th>
-                        <th style={{ padding: 10 }}>Bukti</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -48,21 +50,10 @@ function ExpenseList({ expenses }) {
                                 {expense.expense_category}
                             </td>
                             <td style={{ padding: 10 }}>
-                                {expense.description}
+                                {expense.description || '-'}
                             </td>
                             <td style={{ padding: 10 }}>
                                 {rupiah(expense.amount)}
-                            </td>
-                            <td style={{ padding: 10 }}>
-                                {expense.receipt_file ? (
-                                    <a
-                                        href={`/storage/${expense.receipt_file}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        Lihat bukti
-                                    </a>
-                                ) : '-'}
                             </td>
                         </tr>
                     ))}
@@ -71,6 +62,7 @@ function ExpenseList({ expenses }) {
         </div>
     );
 }
+
 
 export default function Transparency({
     summary,

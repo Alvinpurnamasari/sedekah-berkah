@@ -95,6 +95,7 @@ public function store(Request $request)
             'planned_quantity' => $validated['planned_quantity'],
             'actual_quantity' => 0,
             'total_cost' => 0,
+            'is_simulated' => false,
             'status' => 'planned',
             'report_status' => 'draft',
             'created_by' => auth()->id(),
@@ -122,8 +123,6 @@ public function store(Request $request)
         ->route('superadmin.distributions.index')
         ->with('success', 'Rencana penyaluran berhasil dibuat.');
 }
-
-
 
 public function show(string $id)
 {
@@ -163,11 +162,6 @@ public function show(string $id)
             ->sum('amount'),
     ];
 
-    $documents = DB::table('distribution_documents')
-        ->where('distribution_id', $id)
-        ->orderByDesc('created_at')
-        ->get();
-
     return Inertia::render('Superadmin/Distributions/Show', [
         'distribution' => $distribution,
         'expenses' => $expenses,
@@ -175,6 +169,7 @@ public function show(string $id)
         'documents' => $documents,
     ]);
 }
+
 
 
 public function edit(string $id)

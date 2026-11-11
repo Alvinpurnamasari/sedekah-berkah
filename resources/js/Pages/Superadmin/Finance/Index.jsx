@@ -47,50 +47,66 @@ export default function FinanceIndex({
     recentDonations,
     recentExpenses,
 }) {
-    const cards = [
-        {
-            label: 'Total Donasi',
-            value: rupiah(summary.donation_total),
-            icon: HandCoins,
-            description: 'Donasi yang sudah dibayar',
-            color: 'green',
-        },
-        {
-            label: 'Dukungan Operasional',
-            value: rupiah(summary.operational_total),
-            icon: TrendingUp,
-            description: 'Dana operasional terkumpul',
-            color: 'blue',
-        },
-        {
-            label: 'Total Pemasukan',
-            value: rupiah(summary.total_income),
-            icon: Wallet,
-            description: 'Donasi + dukungan operasional',
-            color: 'purple',
-        },
-        {
-            label: 'Pengeluaran Disetujui',
-            value: rupiah(summary.approved_expense),
-            icon: Receipt,
-            description: 'Pengeluaran yang telah disetujui',
-            color: 'orange',
-        },
-        {
-            label: 'Menunggu Persetujuan',
-            value: rupiah(summary.pending_expense),
-            icon: Clock,
-            description: 'Pengajuan pengeluaran tertunda',
-            color: 'yellow',
-        },
-        {
-            label: 'Saldo Tersedia',
-            value: rupiah(summary.available_balance),
-            icon: CircleDollarSign,
-            description: 'Pemasukan dikurangi pengeluaran disetujui',
-            color: 'dark',
-        },
-    ];
+    
+const cards = [
+    {
+        label: 'Total Donasi',
+        value: rupiah(summary.donation_total),
+        icon: HandCoins,
+        description: 'Donasi yang sudah dibayar',
+        color: 'green',
+    },
+    {
+        label: 'Dukungan Operasional',
+        value: rupiah(summary.operational_total),
+        icon: TrendingUp,
+        description: 'Dana operasional terkumpul',
+        color: 'blue',
+    },
+    {
+        label: 'Total Pemasukan',
+        value: rupiah(summary.total_income),
+        icon: Wallet,
+        description: 'Donasi + dukungan operasional',
+        color: 'purple',
+    },
+    {
+        label: 'Pengeluaran Disetujui',
+        value: rupiah(summary.approved_expense),
+        icon: Receipt,
+        description: 'Biaya tambahan yang disetujui',
+        color: 'orange',
+    },
+    {
+        label: 'Biaya Penyaluran',
+        value: rupiah(summary.distribution_expense),
+        icon: HandCoins,
+        description: 'Total biaya kegiatan penyaluran selesai',
+        color: 'blue',
+    },
+    {
+        label: 'Total Pengeluaran',
+        value: rupiah(summary.total_expense),
+        icon: ArrowDownRight,
+        description: 'Biaya tambahan + biaya penyaluran',
+        color: 'orange',
+    },
+    {
+        label: 'Menunggu Persetujuan',
+        value: rupiah(summary.pending_expense),
+        icon: Clock,
+        description: 'Pengajuan biaya tambahan tertunda',
+        color: 'yellow',
+    },
+    {
+        label: 'Saldo Tersedia',
+        value: rupiah(summary.available_balance),
+        icon: CircleDollarSign,
+        description: 'Pemasukan dikurangi total pengeluaran',
+        color: 'dark',
+    },
+];
+
 
     return (
         <SuperadminLayout activeMenu="finance">
@@ -284,14 +300,16 @@ export default function FinanceIndex({
                             </tbody>
                         </table>
                     </div>
-                </section>
-
+                </section>             
                 <div className="sf-note">
                     <ArrowUpRight size={17} />
                     <span>
                         Pemasukan dihitung dari donasi berstatus berhasil.
-                        Saldo tersedia belum memperhitungkan pengeluaran yang
-                        masih menunggu persetujuan.
+                        Total pengeluaran mencakup biaya penyaluran yang selesai
+                        dan biaya tambahan yang telah disetujui.
+                        Rincian biaya penyaluran tidak dihitung dua kali.
+                        Pengeluaran yang masih menunggu persetujuan belum
+                        mengurangi saldo tersedia.
                     </span>
                     <ArrowDownRight size={17} />
                 </div>

@@ -13,6 +13,7 @@ use App\Http\Controllers\Superadmin\TransactionController;
 use App\Http\Controllers\Superadmin\DistributionController;
 use App\Http\Controllers\Admin\DistributionController as AdminDistributionController;
 use App\Http\Controllers\PublicTransparencyController;
+use App\Http\Controllers\Superadmin\ReportController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -327,6 +328,9 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
         Route::get('/audit-log', [AuditLogController::class, 'index'])
         ->name('audit.index');
+
+        Route::get('/laporan', [ReportController::class, 'index'])
+    ->name('reports.index');
 
 });
 
