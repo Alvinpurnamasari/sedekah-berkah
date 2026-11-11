@@ -414,4 +414,103 @@ public function deleteDocument(string $id, int $documentId)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Dokumentasi berhasil dihapus.');
 }
+public function approveReport(string $id)
+{
+    DB::transaction(function () use ($id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            $distribution->report_status !== 'pending',
+            403,
+            'Laporan ini tidak sedang menunggu pemeriksaan.'
+        );
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'report_status' => 'approved',
+                'report_reviewed_by' => auth()->id(),
+                'report_reviewed_at' => now(),
+                'report_revision_note' => null,
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_report_approved',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'title' => $distribution->title,
+                'previous_status' => 'pending',
+                'new_status' => 'approved',
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Laporan penyaluran berhasil disetujui.');
+}
+
+
+public function requestRevision(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'revision_note' => ['required', 'string', 'min:5', 'max:2000'],
+    ]);
+
+    DB::transaction(function () use ($validated, $id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            $distribution->report_status !== 'pending',
+            403,
+            'Laporan ini tidak sedang menunggu pemeriksaan.'
+        );
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'report_status' => 'revision',
+                'report_reviewed_by' => auth()->id(),
+                'report_reviewed_at' => now(),
+                'report_revision_note' => $validated['revision_note'],
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_report_revision_requested',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'title' => $distribution->title,
+                'previous_status' => 'pending',
+                'new_status' => 'revision',
+                'revision_note' => $validated['revision_note'],
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Laporan dikembalikan kepada Admin untuk diperbaiki.');
+}
 }

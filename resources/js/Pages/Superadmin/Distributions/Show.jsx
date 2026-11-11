@@ -91,6 +91,41 @@ export default function Show({
             }
         );
     };
+    const {
+        data: revisionData,
+        setData: setRevisionData,
+        post: postRevision,
+        processing: submittingRevision,
+        errors: revisionErrors,
+        reset: resetRevision,
+    } = useForm({
+        revision_note: '',
+    });
+
+    const submitRevision = (event) => {
+        event.preventDefault();
+
+        if (!window.confirm('Kembalikan laporan ini kepada Admin untuk diperbaiki?')) {
+            return;
+        }
+
+        postRevision(
+            `/superadmin/penyaluran/${distribution.id}/minta-revisi`,
+            {
+                onSuccess: () => resetRevision(),
+            }
+        );
+    };
+
+    const approveReport = () => {
+        if (!window.confirm('Setujui laporan penyaluran ini?')) {
+            return;
+        }
+
+        router.post(
+            `/superadmin/penyaluran/${distribution.id}/setujui-laporan`
+        );
+    };
     const info = [
         {
             label: 'Program',
@@ -269,13 +304,15 @@ export default function Show({
                         );
                     })}
                 </div>
+            
+
             </div>
             {['planned', 'ongoing'].includes(distribution.status) && (
                 <div style={{
                     background: 'white',
                     border: '1px solid #e5eee9',
                     borderRadius: 14,
-                    padding: 24,
+                     padding: 24,
                     marginBottom: 20,
                 }}>
                     <h3 style={{ marginTop: 0 }}>

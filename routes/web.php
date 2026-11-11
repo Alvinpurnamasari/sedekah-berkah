@@ -296,6 +296,12 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::delete('/penyaluran/{id}/dokumentasi/{documentId}', [DistributionController::class, 'deleteDocument']
         )->name('distributions.documents.delete');
 
+    Route::post('/penyaluran/{id}/setujui-laporan', [DistributionController::class, 'approveReport'])
+        ->name('distributions.approve-report');
+
+    Route::post('/penyaluran/{id}/minta-revisi', [DistributionController::class, 'requestRevision'])
+        ->name('distributions.request-revision');
+        
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
             'index'
