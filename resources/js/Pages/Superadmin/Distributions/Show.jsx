@@ -57,8 +57,8 @@ export default function Show({
     } = useForm({
         actual_quantity: distribution.actual_quantity || 0,
         total_cost: distribution.total_cost || 0,
-        status: distribution.status === 'ongoing'
-            ? 'ongoing'
+        status: distribution.status === 'completed'
+            ? 'completed'
             : 'ongoing',
     });
     
@@ -126,6 +126,27 @@ export default function Show({
             `/superadmin/penyaluran/${distribution.id}/setujui-laporan`
         );
     };
+
+    const publishReport = () => {
+        if (!window.confirm('Publikasikan laporan ini ke halaman transparansi publik?')) {
+            return;
+        }
+
+        router.post(
+            `/superadmin/penyaluran/${distribution.id}/publikasikan`
+        );
+    };
+
+    const unpublishReport = () => {
+        if (!window.confirm('Sembunyikan laporan ini dari halaman transparansi publik?')) {
+            return;
+        }
+
+        router.post(
+            `/superadmin/penyaluran/${distribution.id}/sembunyikan`
+        );
+    };
+
     const info = [
         {
             label: 'Program',
@@ -307,6 +328,201 @@ export default function Show({
             
 
             </div>
+            {distribution.report_status === 'pending' && (
+                <div style={{
+                    background: 'white',
+                    border: '1px solid #e5eee9',
+                    borderRadius: 14,
+                    padding: 24,
+                    marginBottom: 20,
+                }}>
+                    <h3 style={{ marginTop: 0 }}>
+                        Pemeriksaan Laporan Penyaluran
+                    </h3>
+
+                    <p style={{ color: '#82958c' }}>
+                        Laporan ini menunggu keputusan Superadmin.
+                    </p>
+
+                    <p>
+                        Dokumentasi tersedia: {documents.length} foto
+                    </p>
+
+                    <button
+                        type="button"
+                        onClick={approveReport}
+                        style={{
+                            padding: '12px 20px',
+                            background: '#16734f',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: 8,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                        }}
+                    >
+                        Setujui Laporan
+                    </button>
+
+                    <hr style={{
+                        border: 0,
+                        borderTop: '1px solid #e5eee9',
+                        margin: '24px 0',
+                    }} />
+
+                    <h4>Minta Perbaikan Laporan</h4>
+
+                    <form onSubmit={submitRevision}>
+                        <textarea
+                            value={revisionData.revision_note}
+                            onChange={(e) =>
+                                setRevisionData('revision_note', e.target.value)
+                            }
+                            required
+                            minLength={5}
+                            maxLength={2000}
+                            rows={4}
+                            placeholder="Tuliskan alasan laporan perlu diperbaiki..."
+                            style={{
+                                width: '100%',
+                                padding: 12,
+                                border: '1px solid #dce7e1',
+                                borderRadius: 8,
+                                boxSizing: 'border-box',
+                            }}
+                        />
+
+                        {revisionErrors.revision_note && (
+                            <p style={{ color: '#dc2626' }}>
+                                {revisionErrors.revision_note}
+                            </p>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={submittingRevision}
+                            style={{
+                                marginTop: 12,
+                                padding: '12px 20px',
+                                background: '#b45309',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            {submittingRevision
+                                ? 'Mengirim...'
+                                : 'Kirim Permintaan Revisi'}
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {distribution.report_status === 'revision' &&
+                distribution.report_revision_note && (
+                    <div style={{
+                        background: '#fff7ed',
+                        border: '1px solid #fed7aa',
+                        borderRadius: 12,
+                        padding: 18,
+                        marginBottom: 20,
+                    }}>
+                        <strong>Catatan Revisi Sebelumnya</strong>
+                        <p style={{ whiteSpace: 'pre-wrap' }}>
+                            {distribution.report_revision_note}
+                        </p>
+                    </div>
+                )}
+
+            
+{distribution.report_status === 'approved' && (
+                <div style={{
+                    background: '#e8f7ee',
+                    border: '1px solid #b7e4c7',
+                    color: '#176b42',
+                    borderRadius: 12,
+                    padding: 20,
+                    marginBottom: 20,
+                }}>
+                    <strong>✓ Laporan telah disetujui Superadmin.</strong>
+                    <p style={{ marginBottom: 12 }}>
+                        Status publikasi:{' '}
+                        <strong>
+                            {distribution.is_published
+                                ? 'Sudah dipublikasikan'
+                                : 'Belum dipublikasikan'}
+                        </strong>
+                    </p>
+
+                    {distribution.is_published ? (
+                        <button
+                            type="button"
+                            onClick={unpublishReport}
+                            style={{
+                                padding: '11px 18px',
+                                background: '#b91c1c',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            Sembunyikan dari Publik
+                        </button>
+                    ) : (
+                        <div>
+                            <p style={{ marginTop: 0, fontSize: 13 }}>
+                                Pastikan isi laporan dan dokumentasi sudah benar
+                                sebelum ditampilkan kepada masyarakat.
+                            </p>
+
+                            <button
+                                type="button"
+                                onClick={publishReport}
+                                disabled={
+                                    distribution.status !== 'completed' ||
+                                    documents.length === 0
+                                }
+                                style={{
+                                    padding: '11px 18px',
+                                    background:
+                                        distribution.status === 'completed' &&
+                                        documents.length > 0
+                                            ? '#16734f'
+                                            : '#9ca3af',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    fontWeight: 600,
+                                    cursor:
+                                        distribution.status === 'completed' &&
+                                        documents.length > 0
+                                            ? 'pointer'
+                                            : 'not-allowed',
+                                }}
+                            >
+                                Publikasikan Laporan
+                            </button>
+
+                            {(distribution.status !== 'completed' ||
+                                documents.length === 0) && (
+                                <p style={{
+                                    fontSize: 12,
+                                    marginBottom: 0,
+                                }}>
+                                    {!documents.length
+                                        ? 'Tambahkan dokumentasi terlebih dahulu.'
+                                        : 'Penyaluran harus berstatus selesai.'}
+                                </p>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {['planned', 'ongoing'].includes(distribution.status) && (
                 <div style={{
                     background: 'white',

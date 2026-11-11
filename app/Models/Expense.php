@@ -13,26 +13,34 @@ class Expense extends Model
     protected $fillable = [
         'campaign_id',
         'distribution_id',
+        'expense_type',
         'expense_category',
         'description',
         'amount',
+        'is_simulated',
         'receipt_file',
         'approval_status',
-        'rejection_reason',
         'submitted_by',
         'approved_by',
+        'rejection_reason',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'integer',
+            'is_simulated' => 'boolean',
         ];
     }
 
     public function campaign(): BelongsTo
     {
         return $this->belongsTo(Campaign::class);
+    }
+
+    public function distribution(): BelongsTo
+    {
+        return $this->belongsTo(Distribution::class);
     }
 
     public function submitter(): BelongsTo

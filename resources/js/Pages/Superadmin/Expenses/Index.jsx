@@ -29,10 +29,13 @@ export default function Index({ expenses }) {
 
     const filtered = rows.filter((item) => {
         const keyword = search.toLowerCase();
+    
         return (
             item.description?.toLowerCase().includes(keyword) ||
             item.expense_category?.toLowerCase().includes(keyword) ||
+            item.expense_type?.toLowerCase().includes(keyword) ||
             item.campaign?.title?.toLowerCase().includes(keyword) ||
+            item.distribution?.title?.toLowerCase().includes(keyword) ||
             item.submitter?.name?.toLowerCase().includes(keyword)
         );
     });
@@ -117,6 +120,7 @@ export default function Index({ expenses }) {
                                 <tr>
                                     <th>Kategori & Keterangan</th>
                                     <th>Program</th>
+                                    <th>Penyaluran</th>
                                     <th>Pengaju</th>
                                     <th>Nominal</th>
                                     <th>Bukti</th>
@@ -141,10 +145,28 @@ export default function Index({ expenses }) {
                                     <tr key={item.id}>
                                         <td>
                                             <strong>{item.expense_category}</strong>
+
+                                            <small>
+                                                {item.expense_type === 'distribution_detail'
+                                                    ? 'Rincian biaya penyaluran'
+                                                    : item.expense_type === 'additional'
+                                                        ? 'Biaya tambahan'
+                                                        : 'Jenis belum diklasifikasikan'}
+                                            </small>
+
                                             <small>{item.description}</small>
+
+                                            {item.expense_type === 'distribution_detail' && (
+                                                <small>
+                                                    Penyaluran: {item.distribution?.title || 'Belum tersedia'}
+                                                </small>
+                                            )}
                                         </td>
                                         <td>
                                             {item.campaign?.title || 'Umum'}
+                                        </td>
+                                        <td>
+                                            {item.distribution?.title || '-'}
                                         </td>
                                         <td>
                                             {item.submitter?.name || '-'}

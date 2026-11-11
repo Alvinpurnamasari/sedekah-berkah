@@ -15,13 +15,14 @@ class ExpenseApprovalController extends Controller
     {
         $expenses = Expense::with([
             'campaign:id,title',
+            'distribution:id,title,campaign_id',
             'submitter:id,name',
             'approver:id,name',
         ])
             ->latest()
             ->paginate(10)
             ->withQueryString();
-
+    
         return Inertia::render('Superadmin/Expenses/Index', [
             'expenses' => $expenses,
         ]);
@@ -51,6 +52,9 @@ class ExpenseApprovalController extends Controller
                 'metadata' => json_encode([
                     'amount' => $expense->amount,
                     'category' => $expense->expense_category,
+                    'expense_type' => $expense->expense_type,
+                    'distribution_id' => $expense->distribution_id,
+                    'campaign_id' => $expense->campaign_id,
                 ]),
                 'ip_address' => request()->ip(),
                 'created_at' => now(),
@@ -92,6 +96,9 @@ class ExpenseApprovalController extends Controller
                 'metadata' => json_encode([
                     'amount' => $expense->amount,
                     'category' => $expense->expense_category,
+                    'expense_type' => $expense->expense_type,
+                    'distribution_id' => $expense->distribution_id,
+                    'campaign_id' => $expense->campaign_id,
                     'reason' => $data['reason'],
                 ]),
                 'ip_address' => $ipAddress,

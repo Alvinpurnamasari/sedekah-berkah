@@ -33,11 +33,13 @@ const statusLabel = {
     rejected: 'Ditolak',
 };
 
-export default function Index({ expenses, campaigns }) {
+export default function Index({ expenses, campaigns, distributions = [] }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const { props } = usePage();
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
+        expense_type: '',
+        distribution_id: '',
         campaign_id: '',
         expense_category: '',
         description: '',
@@ -209,6 +211,69 @@ export default function Index({ expenses, campaigns }) {
                                 </div>
 
                                 <form onSubmit={submitExpense}>
+                                <div className="ad-expense-field">
+                                    <label htmlFor="expense-type">Jenis pengeluaran *</label>
+                                    <select
+                                        id="expense-type"
+                                        value={data.expense_type}
+                                        onChange={e => {
+                                            const value = e.target.value;
+                                            setData(prev => ({
+                                                ...prev,
+                                                expense_type: value,
+                                                distribution_id: value === 'distribution_detail'
+                                                    ? prev.distribution_id
+                                                    : '',
+                                            }));
+                                        }}
+                                        required
+                                    >
+                                        <option value="">Pilih jenis pengeluaran</option>
+                                        <option value="distribution_detail">Rincian biaya penyaluran</option>
+                                        <option value="additional">Biaya tambahan</option>
+                                    </select>
+
+                                    {errors.expense_type && (
+                                        <small className="ad-expense-error">{errors.expense_type}</small>
+                                    )}
+
+                                    <small>
+                                        Rincian biaya penyaluran merupakan bagian dari total biaya penyaluran.
+                                        Biaya tambahan dicatat terpisah.
+                                    </small>
+                                </div>
+
+                                {data.expense_type === 'distribution_detail' && (
+                                    <div className="ad-expense-field">
+                                        <label htmlFor="expense-distribution">Penyaluran terkait *</label>
+                                        <select
+                                            id="expense-distribution"
+                                            value={data.distribution_id}
+                                            onChange={e => setData('distribution_id', e.target.value)}
+                                            required
+                                        >
+                                            <option value="">Pilih data penyaluran</option>
+                                            {distributions.map(distribution => (
+                                                <option key={distribution.id} value={distribution.id}>
+                                                    {distribution.title}
+                                                    {distribution.campaign?.title
+                                                        ? ` — ${distribution.campaign.title}`
+                                                        : ''}
+                                                </option>
+                                            ))}
+                                        </select>
+
+                                        {errors.distribution_id && (
+                                            <small className="ad-expense-error">{errors.distribution_id}</small>
+                                        )}
+
+                                        {distributions.length === 0 && (
+                                            <small className="ad-expense-error">
+                                                Belum ada data penyaluran yang tersedia.
+                                            </small>
+                                        )}
+                                    </div>
+                                )}
                                     <div className="ad-expense-field">
                                         <label htmlFor="expense-category">
                                             Kategori pengeluaran *
@@ -385,7 +450,14 @@ export default function Index({ expenses, campaigns }) {
                                         {expenses.data.length > 0 ? expenses.data.map(expense => (
                                             <tr key={expense.id}>
                                                 <td>
-                                                    <strong>{expense.expense_category}</strong>
+                                                <strong>{expense.expense_category}</strong>
+                                                    <small>
+                                                        {expense.expense_type === 'distribution_detail'
+                                                            ? 'Rincian biaya penyaluran'
+                                                            : expense.expense_type === 'additional'
+                                                                ? 'Biaya tambahan'
+                                                                : 'Jenis belum diklasifikasikan'}
+                                                    </small>
                                                     <small>{expense.description}</small>
                                                     {expense.receipt_file && (
                                                         <a

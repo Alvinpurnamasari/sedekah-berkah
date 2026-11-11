@@ -17,14 +17,26 @@ export default function Index({ logs, actions, filters }) {
         });
     };
 
+    
     const actionLabels = {
         expense_approved: 'Pengeluaran disetujui',
         expense_rejected: 'Pengeluaran ditolak',
+
         user_created: 'Pengguna dibuat',
         user_updated: 'Pengguna diperbarui',
         user_status_changed: 'Status pengguna diubah',
         user_password_reset: 'Password diatur ulang',
+
+        distribution_created: 'Penyaluran dibuat',
+        distribution_updated: 'Rencana penyaluran diperbarui',
+        distribution_realization_updated: 'Realisasi penyaluran diperbarui',
+        distribution_document_uploaded: 'Dokumentasi diunggah',
+        distribution_document_deleted: 'Dokumentasi dihapus',
+        distribution_report_submitted: 'Laporan diajukan oleh Admin',
+        distribution_report_approved: 'Laporan penyaluran disetujui',
+        distribution_report_revision_requested: 'Laporan dikembalikan untuk revisi',
     };
+
 
     const formatAction = (action) => {
         return actionLabels[action] ||
@@ -66,21 +78,38 @@ export default function Index({ logs, actions, filters }) {
         return String(value);
     };
 
+   
+
     const formatKey = (key) => {
         const labels = {
             name: 'Nama',
             email: 'Email',
             phone: 'Telepon',
-            role: 'Role',
+            role: 'Peran',
             status: 'Status',
             before: 'Sebelumnya',
             after: 'Sesudahnya',
             message: 'Keterangan',
             password: 'Password',
+    
+            title: 'Nama kegiatan',
+            campaign: 'Program',
+            location: 'Lokasi',
+            actual_quantity: 'Jumlah penerima aktual',
+            planned_quantity: 'Target penerima',
+            total_cost: 'Total biaya',
+            caption: 'Keterangan foto',
+            document_date: 'Tanggal dokumentasi',
+            document_count: 'Jumlah dokumentasi',
+            document_id: 'ID dokumentasi',
+            previous_status: 'Status sebelumnya',
+            new_status: 'Status baru',
+            revision_note: 'Catatan revisi',
         };
-
+    
         return labels[key] || key.replaceAll('_', ' ');
     };
+    
 
     const getMetadata = (metadata) => {
         if (!metadata) return '-';
@@ -98,14 +127,36 @@ export default function Index({ logs, actions, filters }) {
         }
 
         return Object.entries(metadata)
-            .filter(([key]) => {
-                return !['password', 'password_confirmation'].includes(
-                    key.toLowerCase()
-                );
-            })
-            .map(([key, value]) => {
-                return `${formatKey(key)}: ${formatValue(value)}`;
-            })
+        .filter(([key]) => {
+            const hiddenKeys = [
+                'password',
+                'password_confirmation',
+                'file_path',
+                'actor',
+            ];
+        
+            return !hiddenKeys.includes(key.toLowerCase());
+        })
+        .map(([key, value]) => {
+            if (
+                ['status', 'previous_status', 'new_status'].includes(key) &&
+                typeof value === 'string'
+            ) {
+                const statusLabels = {
+                    approved: 'Disetujui',
+                    pending: 'Menunggu pemeriksaan',
+                    revision: 'Perlu perbaikan',
+                    draft: 'Draf',
+                    planned: 'Direncanakan',
+                    ongoing: 'Sedang berlangsung',
+                    completed: 'Selesai',
+                };
+        
+                value = statusLabels[value] || value;
+            }
+        
+            return `${formatKey(key)}: ${formatValue(value)}`;
+        })
             .join(' | ');
     };
 
@@ -202,7 +253,9 @@ export default function Index({ logs, actions, filters }) {
                                             </td>
 
                                             <td>
-                                                {item.entity_type || '-'}
+                                                {item.entity_type === 'distribution'
+                                                    ? 'Penyaluran Dana'
+                                                    : item.entity_type || '-'}
                                             </td>
 
                                             <td className="sa-audit-detail">

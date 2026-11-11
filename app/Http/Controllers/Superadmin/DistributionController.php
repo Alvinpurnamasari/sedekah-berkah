@@ -513,4 +513,118 @@ public function requestRevision(Request $request, string $id)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Laporan dikembalikan kepada Admin untuk diperbaiki.');
 }
+
+
+public function publish(string $id)
+{
+    DB::transaction(function () use ($id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            $distribution->status !== 'completed',
+            403,
+            'Penyaluran harus selesai sebelum dipublikasikan.'
+        );
+
+        abort_if(
+            $distribution->report_status !== 'approved',
+            403,
+            'Laporan harus disetujui Superadmin sebelum dipublikasikan.'
+        );
+
+        $hasDocuments = DB::table('distribution_documents')
+            ->where('distribution_id', $id)
+            ->exists();
+
+        abort_if(
+            !$hasDocuments,
+            403,
+            'Tambahkan minimal satu dokumentasi sebelum mempublikasikan laporan.'
+        );
+
+        abort_if(
+            (bool) $distribution->is_published,
+            403,
+            'Laporan ini sudah dipublikasikan.'
+        );
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'is_published' => true,
+                'published_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_published',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'title' => $distribution->title,
+                'previous_status' => 'unpublished',
+                'new_status' => 'published',
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Laporan penyaluran berhasil dipublikasikan.');
+}
+
+public function unpublish(string $id)
+{
+    DB::transaction(function () use ($id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        abort_if(!$distribution, 404);
+
+        abort_if(
+            !(bool) $distribution->is_published,
+            403,
+            'Laporan ini belum dipublikasikan.'
+        );
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'is_published' => false,
+                'published_at' => null,
+                'updated_at' => now(),
+            ]);
+
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_unpublished',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'title' => $distribution->title,
+                'previous_status' => 'published',
+                'new_status' => 'unpublished',
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.distributions.show', $id)
+        ->with('success', 'Laporan penyaluran berhasil disembunyikan dari publik.');
+}
+
 }

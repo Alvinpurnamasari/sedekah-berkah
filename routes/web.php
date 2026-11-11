@@ -12,6 +12,7 @@ use App\Http\Controllers\Superadmin\AuditLogController;
 use App\Http\Controllers\Superadmin\TransactionController;
 use App\Http\Controllers\Superadmin\DistributionController;
 use App\Http\Controllers\Admin\DistributionController as AdminDistributionController;
+use App\Http\Controllers\PublicTransparencyController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -75,9 +76,10 @@ Route::get('/checkout/{slug}', fn ($slug) =>
     Inertia::render('Public/Checkout', ['slug' => $slug])
 )->name('checkout.show');
 
-Route::get('/transparansi', fn () =>
-    Inertia::render('Public/Transparency')
-)->name('transparency');
+Route::get('/transparansi', [
+    \App\Http\Controllers\PublicTransparencyController::class,
+    'index',
+])->name('transparency');
 
 // Halaman login dan pendaftaran
 Route::middleware('guest')->group(function () {
@@ -301,7 +303,13 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
     Route::post('/penyaluran/{id}/minta-revisi', [DistributionController::class, 'requestRevision'])
         ->name('distributions.request-revision');
-        
+   
+    Route::post('/penyaluran/{id}/publikasikan', [DistributionController::class, 'publish'])
+        ->name('distributions.publish');
+    
+    Route::post('/penyaluran/{id}/sembunyikan', [DistributionController::class, 'unpublish'])
+        ->name('distributions.unpublish');
+    
         Route::get('/pengeluaran', [
             \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
             'index'

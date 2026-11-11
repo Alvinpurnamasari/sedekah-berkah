@@ -305,6 +305,57 @@ export default function Show({
                             </div>
                         </section>
 
+
+                        {distribution.report_status === 'revision' &&
+                            distribution.report_revision_note && (
+                                <section
+                                    className="ad-panel ad-dist-description"
+                                    style={{
+                                        background: '#fff7ed',
+                                        border: '1px solid #fed7aa',
+                                        marginBottom: 20,
+                                    }}
+                                >
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        marginBottom: 10,
+                                    }}>
+                                        <AlertCircle
+                                            size={21}
+                                            color="#c2410c"
+                                        />
+                                        <h3 style={{
+                                            margin: 0,
+                                            color: '#9a3412',
+                                        }}>
+                                            Catatan Revisi dari Superadmin
+                                        </h3>
+                                    </div>
+
+                                    <p style={{
+                                        color: '#7c2d12',
+                                        margin: 0,
+                                        whiteSpace: 'pre-wrap',
+                                    }}>
+                                        {distribution.report_revision_note}
+                                    </p>
+
+                                    <p style={{
+                                        color: '#9a3412',
+                                        fontSize: 13,
+                                        marginBottom: 0,
+                                        marginTop: 12,
+                                    }}>
+                                        Silakan perbaiki laporan sesuai catatan
+                                        di atas, kemudian ajukan kembali kepada
+                                        Superadmin.
+                                    </p>
+                                </section>
+                            )}
+
+
                         {distribution.description && (
                             <section className="ad-panel ad-dist-description">
                                 <h3>Keterangan kegiatan</h3>
