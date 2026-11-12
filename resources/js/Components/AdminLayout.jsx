@@ -37,6 +37,7 @@ const adminMenus = [
         id: 'beneficiaries',
         label: 'Target Penerima',
         icon: Users,
+        url: '/admin/target-penerima',
     },
     {
         id: 'transactions',

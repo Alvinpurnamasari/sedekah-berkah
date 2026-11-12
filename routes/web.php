@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\DistributionController as AdminDistributionContro
 use App\Http\Controllers\PublicTransparencyController;
 use App\Http\Controllers\Superadmin\ReportController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
+use App\Http\Controllers\Admin\BeneficiaryTargetController;
+
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -190,6 +192,23 @@ Route::middleware('role:admin')
 
         Route::get('/{id}', [AdminCampaignController::class, 'show'])
             ->name('show');
+    });
+
+    Route::middleware('role:admin')
+    ->prefix('admin/target-penerima')
+    ->name('admin.beneficiaries.')
+    ->group(function () {
+        Route::get('/', [BeneficiaryTargetController::class, 'index'])
+            ->name('index');
+
+        Route::post('/', [BeneficiaryTargetController::class, 'store'])
+            ->name('store');
+
+        Route::put('/{id}', [BeneficiaryTargetController::class, 'update'])
+            ->name('update');
+
+        Route::patch('/{id}/status', [BeneficiaryTargetController::class, 'toggleStatus'])
+            ->name('status');
     });
 
         // Pengajuan pengeluaran oleh Admin
