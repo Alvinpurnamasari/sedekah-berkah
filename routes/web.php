@@ -16,7 +16,7 @@ use App\Http\Controllers\PublicTransparencyController;
 use App\Http\Controllers\Superadmin\ReportController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\BeneficiaryTargetController;
-
+use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -210,7 +210,16 @@ Route::middleware('role:admin')
         Route::patch('/{id}/status', [BeneficiaryTargetController::class, 'toggleStatus'])
             ->name('status');
     });
+    Route::middleware('role:admin')
+    ->prefix('admin/transaksi')
+    ->name('admin.transactions.')
+    ->group(function () {
+        Route::get('/', [AdminTransactionController::class, 'index'])
+            ->name('index');
 
+        Route::get('/{id}', [AdminTransactionController::class, 'show'])
+            ->name('show');
+    });
         // Pengajuan pengeluaran oleh Admin
         Route::get('/admin/pengeluaran', [
             \App\Http\Controllers\Admin\ExpenseController::class,

@@ -40,9 +40,9 @@ const adminMenus = [
         url: '/admin/target-penerima',
     },
     {
-        id: 'transactions',
         label: 'Transaksi',
         icon: Receipt,
+        url: '/admin/transaksi',
     },
     {
         id: 'distribution',
