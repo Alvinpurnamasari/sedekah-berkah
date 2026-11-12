@@ -14,6 +14,7 @@ use App\Http\Controllers\Superadmin\DistributionController;
 use App\Http\Controllers\Admin\DistributionController as AdminDistributionController;
 use App\Http\Controllers\PublicTransparencyController;
 use App\Http\Controllers\Superadmin\ReportController;
+use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -165,6 +166,31 @@ Route::get('/admin', function () {
         'recentActivities' => $recentActivities,
     ]);
 })->middleware('role:admin')->name('admin.dashboard');
+
+// Manajemen Program Admin
+Route::middleware('role:admin')
+    ->prefix('admin/program')
+    ->name('admin.campaigns.')
+    ->group(function () {
+
+        Route::get('/', [AdminCampaignController::class, 'index'])
+            ->name('index');
+
+        Route::get('/tambah', [AdminCampaignController::class, 'create'])
+            ->name('create');
+
+        Route::post('/', [AdminCampaignController::class, 'store'])
+            ->name('store');
+
+        Route::get('/{id}/edit', [AdminCampaignController::class, 'edit'])
+            ->name('edit');
+
+        Route::put('/{id}', [AdminCampaignController::class, 'update'])
+            ->name('update');
+
+        Route::get('/{id}', [AdminCampaignController::class, 'show'])
+            ->name('show');
+    });
 
         // Pengajuan pengeluaran oleh Admin
         Route::get('/admin/pengeluaran', [
