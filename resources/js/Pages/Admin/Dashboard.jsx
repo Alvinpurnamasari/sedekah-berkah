@@ -39,7 +39,37 @@ const formatRupiah = (value) => {
         maximumFractionDigits: 0,
     }).format(Number(value || 0));
 };
+const activityLabels = {
+    user_created: 'Membuat pengguna',
+    user_updated: 'Mengubah data pengguna',
+    user_status_changed: 'Mengubah status pengguna',
+    user_password_reset: 'Mereset password pengguna',
+    expense_approved: 'Pengeluaran disetujui',
+    expense_rejected: 'Pengeluaran ditolak',
+    distribution_published: 'Laporan penyaluran dipublikasikan',
+    distribution_unpublished: 'Publikasi laporan dibatalkan',
+    distribution_report_submitted: 'Mengajukan laporan penyaluran',
+    distribution_report_approved: 'Laporan penyaluran disetujui',
+    distribution_report_revision_requested: 'Meminta revisi laporan',
+};
 
+const getActivityLabel = (action) => {
+    return activityLabels[action] || action
+        ?.replaceAll('_', ' ')
+        ?.replace(/\b\w/g, letter => letter.toUpperCase()) || 'Aktivitas';
+};
+
+const formatActivityDate = (date) => {
+    if (!date) return '-';
+
+    return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(new Date(date));
+};
 const summaryCards = (summary = {}) => [
     {
         label: 'Kampanye aktif',
@@ -51,7 +81,7 @@ const summaryCards = (summary = {}) => [
     {
         label: 'Dana terverifikasi',
         value: formatRupiah(summary.verifiedFunds),
-        note: 'Total donasi berstatus paid',
+        note: 'Donasi pokok dan dukungan operasional',
         icon: Wallet,
         color: 'blue',
     },
@@ -62,9 +92,33 @@ const summaryCards = (summary = {}) => [
         icon: HandHeart,
         color: 'orange',
     },
+    {
+        label: 'Donasi berhasil',
+        value: summary.successfulDonations ?? 0,
+        note: 'Transaksi berstatus paid',
+        icon: Receipt,
+        color: 'green',
+    },
+    {
+        label: 'Laporan menunggu persetujuan',
+        value: summary.pendingReports ?? 0,
+        note: 'Menunggu pemeriksaan Superadmin',
+        icon: FileText,
+        color: 'blue',
+    },
+    {
+        label: 'Pengeluaran menunggu persetujuan',
+        value: summary.pendingExpenses ?? 0,
+        note: 'Menunggu keputusan Superadmin',
+        icon: ClipboardList,
+        color: 'orange',
+    },
 ];
 
-export default function Dashboard({ summary = {} }) {
+export default function Dashboard({
+    summary = {},
+    recentActivities = [],
+}) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     function logout() {
@@ -249,13 +303,53 @@ export default function Dashboard({ summary = {} }) {
                                     <Clock3 size={20} />
                                 </div>
 
-                                <div className="ad-empty">
-                                    <ClipboardList size={34} />
-                                    <strong>Belum ada aktivitas</strong>
-                                    <span>
-                                        Aktivitas akan tampil setelah modul operasional digunakan.
-                                    </span>
-                                </div>
+                                {recentActivities.length > 0 ? (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {recentActivities.map((activity, index) => (
+            <div
+                key={`${activity.action}-${activity.created_at}-${index}`}
+                style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '12px 0',
+                    borderBottom: '1px solid #e5eee9',
+                }}
+            >
+                <div>
+                    <strong style={{ display: 'block', fontSize: '13px' }}>
+                        {getActivityLabel(activity.action)}
+                    </strong>
+
+                    <span style={{ fontSize: '12px', color: '#789087' }}>
+                        {activity.user_name || 'Sistem'}
+                        {activity.entity_type
+                            ? ` • ${activity.entity_type}`
+                            : ''}
+                    </span>
+                </div>
+
+                <small style={{
+                    color: '#789087',
+                    fontSize: '11px',
+                    textAlign: 'right',
+                    flexShrink: 0,
+                }}>
+                    {formatActivityDate(activity.created_at)}
+                </small>
+            </div>
+        ))}
+    </div>
+) : (
+    <div className="ad-empty">
+        <ClipboardList size={34} />
+        <strong>Belum ada aktivitas</strong>
+        <span>
+            Aktivitas akan tampil setelah modul operasional digunakan.
+        </span>
+    </div>
+)}
                             </section>
 
                             <section className="ad-panel">
