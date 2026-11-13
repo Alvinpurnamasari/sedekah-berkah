@@ -361,9 +361,6 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::get('/transaksi/{id}', [TransactionController::class, 'show'])
         ->name('transactions.show');
 
-    Route::post('/transaksi/{id}/simulasi-status', [TransactionController::class, 'simulateStatus'])
-        ->name('transactions.simulate-status');
-
     Route::get('/penyaluran', [DistributionController::class, 'index'])
         ->name('distributions.index');
 

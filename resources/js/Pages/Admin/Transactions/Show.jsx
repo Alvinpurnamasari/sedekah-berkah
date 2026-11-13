@@ -111,20 +111,6 @@ export default function TransactionShow({
                                 {statusLabels[transaction.payment_status] ||
                                     transaction.payment_status}
                             </span>
-
-                            {Boolean(Number(transaction.is_simulated)) && (
-                                <span style={{
-                                    background: '#fff1cc',
-                                    color: '#946200',
-                                    padding: '5px 10px',
-                                    borderRadius: 6,
-                                    fontSize: 11,
-                                    fontWeight: 700,
-                                    letterSpacing: '0.5px',
-                                }}>
-                                    SIMULASI — BUKAN PEMBAYARAN NYATA
-                                </span>
-                            )}
                         </div>
                     </div>
 

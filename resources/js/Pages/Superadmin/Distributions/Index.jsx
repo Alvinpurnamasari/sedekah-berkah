@@ -219,8 +219,8 @@ export default function Index({
                             {distributions.data.length > 0 ? (
                                 distributions.data.map((item) => (
                                     <tr key={item.id} style={{ borderBottom: '1px solid #edf1ee' }}>
-                                        <td style={{ padding: 14, fontWeight: 600 }}>
-                                            {item.title}
+                                       <td style={{ padding: 14, fontWeight: 600 }}>
+                                            <div>{item.title}</div>
                                         </td>
                                         <td style={{ padding: 14 }}>
                                             {item.campaign_title || '-'}
@@ -256,7 +256,7 @@ export default function Index({
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" style={{
+                                    <td colSpan="8" style={{
                                         textAlign: 'center',
                                         padding: 50,
                                         color: '#82958c',

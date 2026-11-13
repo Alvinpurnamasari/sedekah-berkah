@@ -15,7 +15,7 @@ class ExpenseApprovalController extends Controller
     {
         $expenses = Expense::with([
             'campaign:id,title',
-            'distribution:id,title,campaign_id',
+            'distribution:id,title,campaign_id,is_simulated',
             'submitter:id,name',
             'approver:id,name',
         ])
@@ -55,6 +55,7 @@ class ExpenseApprovalController extends Controller
                     'expense_type' => $expense->expense_type,
                     'distribution_id' => $expense->distribution_id,
                     'campaign_id' => $expense->campaign_id,
+                    'is_simulated' => (bool) $expense->is_simulated,
                 ]),
                 'ip_address' => request()->ip(),
                 'created_at' => now(),

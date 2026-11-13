@@ -1,26 +1,27 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
+import AdminLayout from '../../../Components/AdminLayout';
 import {
-    LayoutDashboard, Megaphone, Users, Receipt, HandHeart,
-    Images, Wallet, FileText, Menu, X, Bell, LogOut,
-    ShieldCheck, ClipboardList, ArrowLeft, MapPin, CalendarDays,
-    UsersRound, Wallet as WalletIcon, Image as ImageIcon,
-    Upload, Trash2, Send, Save, AlertCircle, CheckCircle2,
-    Eye, Clock3,
+    ArrowLeft,
+    HandHeart,
+    CalendarDays,
+    MapPin,
+    UsersRound,
+    Wallet,
+    ClipboardList,
+    Image as ImageIcon,
+    Upload,
+    Trash2,
+    Send,
+    Save,
+    AlertCircle,
+    CheckCircle2,
+    Eye,
+    Clock3,
+    ShieldCheck,
 } from 'lucide-react';
 import '../../../../css/admin.css';
-
-const adminMenus = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, url: '/admin' },
-    { id: 'campaigns', label: 'Manajemen Program', icon: Megaphone },
-    { id: 'beneficiaries', label: 'Target Penerima', icon: Users },
-    { id: 'transactions', label: 'Transaksi', icon: Receipt },
-    { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart, url: '/admin/penyaluran' },
-    { id: 'documentation', label: 'Dokumentasi', icon: Images },
-    { id: 'expenses', label: 'Pengeluaran', icon: Wallet, url: '/admin/pengeluaran' },
-    { id: 'reports', label: 'Laporan Kegiatan', icon: FileText },
-];
 
 const rupiah = (value) =>
     new Intl.NumberFormat('id-ID', {
@@ -48,13 +49,14 @@ export default function Show({
     expenseSummary = {},
     documents = [],
 }) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
     const { props } = usePage();
 
     const realizationForm = useForm({
         actual_quantity: distribution.actual_quantity || 0,
         total_cost: distribution.total_cost || 0,
-        status: distribution.status === 'planned' ? 'ongoing' : distribution.status,
+        status: distribution.status === 'planned'
+            ? 'ongoing'
+            : distribution.status,
     });
 
     const documentForm = useForm({
@@ -63,15 +65,21 @@ export default function Show({
         document_date: new Date().toISOString().slice(0, 10),
     });
 
-    const canEdit = ['draft', 'revision'].includes(distribution.report_status);
+    const canEdit = ['draft', 'revision'].includes(
+        distribution.report_status
+    );
+
     const canSubmit =
         distribution.status === 'completed' &&
         canEdit &&
         documents.length > 0;
 
-    function logout() {
-        router.post('/logout');
-    }
+    const activityLabel =
+        activityLabels[distribution.status] || distribution.status;
+
+    const reportLabel =
+        reportLabels[distribution.report_status] ||
+        distribution.report_status;
 
     function submitRealization(e) {
         e.preventDefault();
@@ -96,7 +104,9 @@ export default function Show({
     }
 
     function deleteDocument(documentId) {
-        if (!window.confirm('Yakin ingin menghapus dokumentasi ini?')) return;
+        if (!window.confirm('Yakin ingin menghapus dokumentasi ini?')) {
+            return;
+        }
 
         router.delete(
             `/admin/penyaluran/${distribution.id}/dokumentasi/${documentId}`,
@@ -107,7 +117,9 @@ export default function Show({
     function submitReport() {
         if (!window.confirm(
             'Ajukan laporan ini kepada Superadmin untuk diperiksa? Setelah diajukan, realisasi dan dokumentasi tidak dapat diubah sampai laporan diminta revisi.'
-        )) return;
+        )) {
+            return;
+        }
 
         router.post(
             `/admin/penyaluran/${distribution.id}/ajukan-laporan`,
@@ -116,555 +128,492 @@ export default function Show({
         );
     }
 
-    const activityLabel =
-        activityLabels[distribution.status] || distribution.status;
-
-    const reportLabel =
-        reportLabels[distribution.report_status] || distribution.report_status;
-
     return (
-        <>
+        <AdminLayout
+            title="Detail Penyaluran"
+            activeMenu="distribution"
+        >
             <Head title={`Detail Penyaluran - ${distribution.title}`} />
 
-            <div className="ad-app">
-                {sidebarOpen && (
-                    <button
-                        className="ad-overlay"
-                        onClick={() => setSidebarOpen(false)}
-                        aria-label="Tutup menu"
-                    />
+            <div className="ad-content">
+
+                <div className="ad-dist-back">
+                    <Link href="/admin/penyaluran">
+                        <ArrowLeft size={17} />
+                        Kembali ke daftar penyaluran
+                    </Link>
+                </div>
+
+                {props.flash?.success && (
+                    <div className="ad-dist-alert success">
+                        <CheckCircle2 size={19} />
+                        {props.flash.success}
+                    </div>
                 )}
 
-                <aside className={`ad-sidebar ${sidebarOpen ? 'show' : ''}`}>
-                    <div className="ad-brand">
-                        <div className="ad-brand-icon">♥</div>
-                        <div>
-                            <strong>Sedekah Berkah</strong>
-                            <small>Administration</small>
-                        </div>
-                        <button
-                            className="ad-close"
-                            onClick={() => setSidebarOpen(false)}
-                            aria-label="Tutup menu"
+                <section className="ad-welcome">
+                    <div>
+                        <span className="ad-eyebrow">
+                            DETAIL KEGIATAN LAPANGAN
+                        </span>
+                        <h2>{distribution.title}</h2>
+                        <p>
+                            {distribution.campaign_title ||
+                                'Program Sedekah Berkah'}
+                        </p>
+                    </div>
+
+                    <div className="ad-welcome-icon">
+                        <HandHeart size={38} />
+                    </div>
+                </section>
+
+                <section className="ad-dist-info-grid">
+                    <div className="ad-dist-info-card">
+                        <MapPin size={21} />
+                        <span>Lokasi kegiatan</span>
+                        <strong>{distribution.location || '-'}</strong>
+                    </div>
+
+                    <div className="ad-dist-info-card">
+                        <CalendarDays size={21} />
+                        <span>Tanggal penyaluran</span>
+                        <strong>
+                            {distribution.distribution_date || '-'}
+                        </strong>
+                    </div>
+
+                    <div className="ad-dist-info-card">
+                        <UsersRound size={21} />
+                        <span>Target penerima</span>
+                        <strong>
+                            {distribution.planned_quantity || 0} orang
+                        </strong>
+                    </div>
+
+                    <div className="ad-dist-info-card">
+                        <Wallet size={21} />
+                        <span>Target biaya / realisasi</span>
+                        <strong>{rupiah(distribution.total_cost)}</strong>
+                    </div>
+                </section>
+
+                <section className="ad-dist-status-panel">
+                    <div>
+                        <span>Status kegiatan</span>
+                        <strong>{activityLabel}</strong>
+                    </div>
+
+                    <div>
+                        <span>Status laporan</span>
+                        <strong>{reportLabel}</strong>
+                    </div>
+                </section>
+
+                {distribution.report_status === 'revision' &&
+                    distribution.report_revision_note && (
+                        <section
+                            className="ad-panel ad-dist-description"
+                            style={{
+                                background: '#fff7ed',
+                                border: '1px solid #fed7aa',
+                                marginBottom: 20,
+                            }}
                         >
-                            <X size={20} />
-                        </button>
-                    </div>
-
-                    <div className="ad-role">
-                        <ShieldCheck size={17} />
-                        ADMIN OPERASIONAL
-                    </div>
-
-                    <div className="ad-menu-title">MENU OPERASIONAL</div>
-
-                    <nav className="ad-navigation">
-                        {adminMenus.map(item => {
-                            const Icon = item.icon;
-                            const active = item.id === 'distribution';
-
-                            return item.url ? (
-                                <button
-                                    key={item.id}
-                                    type="button"
-                                    className={`ad-menu-item ${active ? 'active' : 'upcoming'} ad-menu-link`}
-                                    onClick={() => {
-                                        router.visit(item.url);
-                                        setSidebarOpen(false);
-                                    }}
-                                >
-                                    <Icon size={19} />
-                                    <span>{item.label}</span>
-                                    {active && <span className="ad-active-dot" />}
-                                    {!active && <span className="ad-coming">Buka</span>}
-                                </button>
-                            ) : (
-                                <div
-                                    key={item.id}
-                                    className="ad-menu-item upcoming"
-                                    title="Modul akan diaktifkan pada tahap berikutnya"
-                                >
-                                    <Icon size={19} />
-                                    <span>{item.label}</span>
-                                    <span className="ad-coming">Segera</span>
-                                </div>
-                            );
-                        })}
-                    </nav>
-
-                    <div className="ad-sidebar-bottom">
-                        <div className="ad-sidebar-note">
-                            <ClipboardList size={20} />
-                            <div>
-                                <strong>Area operasional</strong>
-                                <small>Kelola kegiatan dan laporan</small>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 10,
+                                marginBottom: 10,
+                            }}>
+                                <AlertCircle
+                                    size={21}
+                                    color="#c2410c"
+                                />
+                                <h3 style={{
+                                    margin: 0,
+                                    color: '#9a3412',
+                                }}>
+                                    Catatan Revisi dari Superadmin
+                                </h3>
                             </div>
+
+                            <p style={{
+                                color: '#7c2d12',
+                                margin: 0,
+                                whiteSpace: 'pre-wrap',
+                            }}>
+                                {distribution.report_revision_note}
+                            </p>
+
+                            <p style={{
+                                color: '#9a3412',
+                                fontSize: 13,
+                                marginBottom: 0,
+                                marginTop: 12,
+                            }}>
+                                Silakan perbaiki laporan sesuai catatan
+                                di atas, kemudian ajukan kembali kepada
+                                Superadmin.
+                            </p>
+                        </section>
+                    )}
+
+                {distribution.description && (
+                    <section className="ad-panel ad-dist-description">
+                        <h3>Keterangan kegiatan</h3>
+                        <p>{distribution.description}</p>
+                    </section>
+                )}
+
+                <section className="ad-panel ad-dist-section">
+                    <div className="ad-dist-heading">
+                        <div>
+                            <h3>Realisasi penyaluran</h3>
+                            <p>
+                                Catat hasil aktual pelaksanaan kegiatan
+                                di lapangan.
+                            </p>
                         </div>
-
-                        <button className="ad-logout" onClick={logout}>
-                            <LogOut size={18} />
-                            Keluar
-                        </button>
+                        <ClipboardList size={25} />
                     </div>
-                </aside>
 
-                <div className="ad-main">
-                    <header className="ad-header">
-                        <div className="ad-header-left">
+                    {canEdit ? (
+                        <form onSubmit={submitRealization}>
+                            <div className="ad-dist-form-grid">
+                                <div className="ad-dist-field">
+                                    <label>Jumlah penerima aktual *</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={realizationForm.data.actual_quantity}
+                                        onChange={e =>
+                                            realizationForm.setData(
+                                                'actual_quantity',
+                                                e.target.value
+                                            )
+                                        }
+                                        required
+                                    />
+                                    {realizationForm.errors.actual_quantity && (
+                                        <small className="ad-dist-error">
+                                            {realizationForm.errors.actual_quantity}
+                                        </small>
+                                    )}
+                                </div>
+
+                                <div className="ad-dist-field">
+                                    <label>Total biaya aktual (Rp) *</label>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={realizationForm.data.total_cost}
+                                        onChange={e =>
+                                            realizationForm.setData(
+                                                'total_cost',
+                                                e.target.value
+                                            )
+                                        }
+                                        required
+                                    />
+                                    {realizationForm.errors.total_cost && (
+                                        <small className="ad-dist-error">
+                                            {realizationForm.errors.total_cost}
+                                        </small>
+                                    )}
+                                </div>
+
+                                <div className="ad-dist-field">
+                                    <label>Status kegiatan *</label>
+                                    <select
+                                        value={realizationForm.data.status}
+                                        onChange={e =>
+                                            realizationForm.setData(
+                                                'status',
+                                                e.target.value
+                                            )
+                                        }
+                                    >
+                                        <option value="ongoing">
+                                            Berlangsung
+                                        </option>
+                                        <option value="completed">
+                                            Selesai
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <button
-                                className="ad-mobile-menu"
-                                onClick={() => setSidebarOpen(true)}
-                                aria-label="Buka menu"
+                                type="submit"
+                                className="ad-dist-primary-button"
+                                disabled={realizationForm.processing}
                             >
-                                <Menu size={22} />
+                                <Save size={18} />
+                                {realizationForm.processing
+                                    ? 'Menyimpan...'
+                                    : 'Simpan realisasi'}
                             </button>
-                            <div>
-                                <div className="ad-breadcrumb">
-                                    Admin / Penyaluran Dana / Detail
+                        </form>
+                    ) : (
+                        <div className="ad-dist-locked">
+                            <ShieldCheck size={20} />
+                            Realisasi dikunci karena laporan sedang
+                            diperiksa atau sudah disetujui Superadmin.
+                        </div>
+                    )}
+                </section>
+
+                <section className="ad-panel ad-dist-section">
+                    <div className="ad-dist-heading">
+                        <div>
+                            <h3>Dokumentasi kegiatan</h3>
+                            <p>
+                                Unggah foto kegiatan sebagai bukti penyaluran.
+                            </p>
+                        </div>
+                        <ImageIcon size={25} />
+                    </div>
+
+                    {canEdit && (
+                        <form
+                            onSubmit={submitDocument}
+                            className="ad-dist-document-form"
+                        >
+                            <div className="ad-dist-form-grid">
+                                <div className="ad-dist-field">
+                                    <label>Foto dokumentasi *</label>
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp"
+                                        onChange={e =>
+                                            documentForm.setData(
+                                                'photo',
+                                                e.target.files[0] || null
+                                            )
+                                        }
+                                        required
+                                    />
+                                    <small>
+                                        JPG, PNG, WEBP. Maksimal 5 MB.
+                                    </small>
+                                    {documentForm.errors.photo && (
+                                        <small className="ad-dist-error">
+                                            {documentForm.errors.photo}
+                                        </small>
+                                    )}
                                 </div>
-                                <h1>Detail Penyaluran</h1>
-                            </div>
-                        </div>
 
-                        <div className="ad-header-right">
-                            <span className="ad-admin-status">
-                                <span />
-                                Area Admin
-                            </span>
-                            <button className="ad-notification" title="Notifikasi">
-                                <Bell size={19} />
+                                <div className="ad-dist-field">
+                                    <label>Tanggal dokumentasi</label>
+                                    <input
+                                        type="date"
+                                        value={documentForm.data.document_date}
+                                        onChange={e =>
+                                            documentForm.setData(
+                                                'document_date',
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
+
+                                <div className="ad-dist-field ad-dist-full">
+                                    <label>Keterangan foto</label>
+                                    <input
+                                        type="text"
+                                        maxLength="255"
+                                        placeholder="Contoh: Penyerahan paket sembako kepada penerima"
+                                        value={documentForm.data.caption}
+                                        onChange={e =>
+                                            documentForm.setData(
+                                                'caption',
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="ad-dist-primary-button"
+                                disabled={documentForm.processing}
+                            >
+                                <Upload size={18} />
+                                {documentForm.processing
+                                    ? 'Mengunggah...'
+                                    : 'Unggah dokumentasi'}
                             </button>
-                            <div className="ad-avatar">AD</div>
-                        </div>
-                    </header>
+                        </form>
+                    )}
 
-                    <main className="ad-content">
-                        <div className="ad-dist-back">
-                            <Link href="/admin/penyaluran">
-                                <ArrowLeft size={17} />
-                                Kembali ke daftar penyaluran
-                            </Link>
-                        </div>
-
-                        {props.flash?.success && (
-                            <div className="ad-dist-alert success">
-                                <CheckCircle2 size={19} />
-                                {props.flash.success}
-                            </div>
-                        )}
-
-                        <section className="ad-welcome">
-                            <div>
-                                <span className="ad-eyebrow">
-                                    DETAIL KEGIATAN LAPANGAN
+                    <div className="ad-dist-gallery">
+                        {documents.length === 0 ? (
+                            <div className="ad-dist-empty">
+                                <ImageIcon size={34} />
+                                <strong>Belum ada dokumentasi</strong>
+                                <span>
+                                    Foto kegiatan yang diunggah akan tampil
+                                    di sini.
                                 </span>
-                                <h2>{distribution.title}</h2>
-                                <p>
-                                    {distribution.campaign_title || 'Program Sedekah Berkah'}
-                                </p>
                             </div>
-                            <div className="ad-welcome-icon">
-                                <HandHeart size={38} />
-                            </div>
-                        </section>
-
-                        <section className="ad-dist-info-grid">
-                            <div className="ad-dist-info-card">
-                                <MapPin size={21} />
-                                <span>Lokasi kegiatan</span>
-                                <strong>{distribution.location || '-'}</strong>
-                            </div>
-
-                            <div className="ad-dist-info-card">
-                                <CalendarDays size={21} />
-                                <span>Tanggal penyaluran</span>
-                                <strong>{distribution.distribution_date || '-'}</strong>
-                            </div>
-
-                            <div className="ad-dist-info-card">
-                                <UsersRound size={21} />
-                                <span>Target penerima</span>
-                                <strong>{distribution.planned_quantity || 0} orang</strong>
-                            </div>
-
-                            <div className="ad-dist-info-card">
-                                <WalletIcon size={21} />
-                                <span>Target biaya / realisasi</span>
-                                <strong>{rupiah(distribution.total_cost)}</strong>
-                            </div>
-                        </section>
-
-                        <section className="ad-dist-status-panel">
-                            <div>
-                                <span>Status kegiatan</span>
-                                <strong>{activityLabel}</strong>
-                            </div>
-                            <div>
-                                <span>Status laporan</span>
-                                <strong>{reportLabel}</strong>
-                            </div>
-                        </section>
-
-
-                        {distribution.report_status === 'revision' &&
-                            distribution.report_revision_note && (
-                                <section
-                                    className="ad-panel ad-dist-description"
-                                    style={{
-                                        background: '#fff7ed',
-                                        border: '1px solid #fed7aa',
-                                        marginBottom: 20,
-                                    }}
+                        ) : (
+                            documents.map(document => (
+                                <article
+                                    className="ad-dist-photo-card"
+                                    key={document.id}
                                 >
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        marginBottom: 10,
-                                    }}>
-                                        <AlertCircle
-                                            size={21}
-                                            color="#c2410c"
+                                    <a
+                                        href={`/storage/${document.file_path}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        <img
+                                            src={`/storage/${document.file_path}`}
+                                            alt={
+                                                document.caption ||
+                                                'Dokumentasi penyaluran'
+                                            }
                                         />
-                                        <h3 style={{
-                                            margin: 0,
-                                            color: '#9a3412',
-                                        }}>
-                                            Catatan Revisi dari Superadmin
-                                        </h3>
-                                    </div>
+                                    </a>
 
-                                    <p style={{
-                                        color: '#7c2d12',
-                                        margin: 0,
-                                        whiteSpace: 'pre-wrap',
-                                    }}>
-                                        {distribution.report_revision_note}
-                                    </p>
+                                    <div className="ad-dist-photo-info">
+                                        <strong>
+                                            {document.caption ||
+                                                'Dokumentasi kegiatan'}
+                                        </strong>
+                                        <span>
+                                            {document.document_date || '-'}
+                                        </span>
 
-                                    <p style={{
-                                        color: '#9a3412',
-                                        fontSize: 13,
-                                        marginBottom: 0,
-                                        marginTop: 12,
-                                    }}>
-                                        Silakan perbaiki laporan sesuai catatan
-                                        di atas, kemudian ajukan kembali kepada
-                                        Superadmin.
-                                    </p>
-                                </section>
-                            )}
-
-
-                        {distribution.description && (
-                            <section className="ad-panel ad-dist-description">
-                                <h3>Keterangan kegiatan</h3>
-                                <p>{distribution.description}</p>
-                            </section>
-                        )}
-
-                        <section className="ad-panel ad-dist-section">
-                            <div className="ad-dist-heading">
-                                <div>
-                                    <h3>Realisasi penyaluran</h3>
-                                    <p>
-                                        Catat hasil aktual pelaksanaan kegiatan di lapangan.
-                                    </p>
-                                </div>
-                                <ClipboardList size={25} />
-                            </div>
-
-                            {canEdit ? (
-                                <form onSubmit={submitRealization}>
-                                    <div className="ad-dist-form-grid">
-                                        <div className="ad-dist-field">
-                                            <label>Jumlah penerima aktual *</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={realizationForm.data.actual_quantity}
-                                                onChange={e => realizationForm.setData(
-                                                    'actual_quantity', e.target.value
-                                                )}
-                                                required
-                                            />
-                                            {realizationForm.errors.actual_quantity && (
-                                                <small className="ad-dist-error">
-                                                    {realizationForm.errors.actual_quantity}
-                                                </small>
-                                            )}
-                                        </div>
-
-                                        <div className="ad-dist-field">
-                                            <label>Total biaya aktual (Rp) *</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={realizationForm.data.total_cost}
-                                                onChange={e => realizationForm.setData(
-                                                    'total_cost', e.target.value
-                                                )}
-                                                required
-                                            />
-                                            {realizationForm.errors.total_cost && (
-                                                <small className="ad-dist-error">
-                                                    {realizationForm.errors.total_cost}
-                                                </small>
-                                            )}
-                                        </div>
-
-                                        <div className="ad-dist-field">
-                                            <label>Status kegiatan *</label>
-                                            <select
-                                                value={realizationForm.data.status}
-                                                onChange={e => realizationForm.setData(
-                                                    'status', e.target.value
-                                                )}
-                                            >
-                                                <option value="ongoing">Berlangsung</option>
-                                                <option value="completed">Selesai</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="ad-dist-primary-button"
-                                        disabled={realizationForm.processing}
-                                    >
-                                        <Save size={18} />
-                                        {realizationForm.processing
-                                            ? 'Menyimpan...'
-                                            : 'Simpan realisasi'}
-                                    </button>
-                                </form>
-                            ) : (
-                                <div className="ad-dist-locked">
-                                    <ShieldCheck size={20} />
-                                    Realisasi dikunci karena laporan sedang diperiksa
-                                    atau sudah disetujui Superadmin.
-                                </div>
-                            )}
-                        </section>
-
-                        <section className="ad-panel ad-dist-section">
-                            <div className="ad-dist-heading">
-                                <div>
-                                    <h3>Dokumentasi kegiatan</h3>
-                                    <p>
-                                        Unggah foto kegiatan sebagai bukti penyaluran.
-                                    </p>
-                                </div>
-                                <ImageIcon size={25} />
-                            </div>
-
-                            {canEdit && (
-                                <form
-                                    onSubmit={submitDocument}
-                                    className="ad-dist-document-form"
-                                >
-                                    <div className="ad-dist-form-grid">
-                                        <div className="ad-dist-field">
-                                            <label>Foto dokumentasi *</label>
-                                            <input
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp"
-                                                onChange={e => documentForm.setData(
-                                                    'photo', e.target.files[0] || null
-                                                )}
-                                                required
-                                            />
-                                            <small>JPG, PNG, WEBP. Maksimal 5 MB.</small>
-                                            {documentForm.errors.photo && (
-                                                <small className="ad-dist-error">
-                                                    {documentForm.errors.photo}
-                                                </small>
-                                            )}
-                                        </div>
-
-                                        <div className="ad-dist-field">
-                                            <label>Tanggal dokumentasi</label>
-                                            <input
-                                                type="date"
-                                                value={documentForm.data.document_date}
-                                                onChange={e => documentForm.setData(
-                                                    'document_date', e.target.value
-                                                )}
-                                            />
-                                        </div>
-
-                                        <div className="ad-dist-field ad-dist-full">
-                                            <label>Keterangan foto</label>
-                                            <input
-                                                type="text"
-                                                maxLength="255"
-                                                placeholder="Contoh: Penyerahan paket sembako kepada penerima"
-                                                value={documentForm.data.caption}
-                                                onChange={e => documentForm.setData(
-                                                    'caption', e.target.value
-                                                )}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        type="submit"
-                                        className="ad-dist-primary-button"
-                                        disabled={documentForm.processing}
-                                    >
-                                        <Upload size={18} />
-                                        {documentForm.processing
-                                            ? 'Mengunggah...'
-                                            : 'Unggah dokumentasi'}
-                                    </button>
-                                </form>
-                            )}
-
-                            <div className="ad-dist-gallery">
-                                {documents.length === 0 ? (
-                                    <div className="ad-dist-empty">
-                                        <ImageIcon size={34} />
-                                        <strong>Belum ada dokumentasi</strong>
-                                        <span>Foto kegiatan yang diunggah akan tampil di sini.</span>
-                                    </div>
-                                ) : (
-                                    documents.map(document => (
-                                        <article
-                                            className="ad-dist-photo-card"
-                                            key={document.id}
-                                        >
+                                        <div className="ad-dist-photo-actions">
                                             <a
                                                 href={`/storage/${document.file_path}`}
                                                 target="_blank"
                                                 rel="noreferrer"
                                             >
-                                                <img
-                                                    src={`/storage/${document.file_path}`}
-                                                    alt={document.caption || 'Dokumentasi penyaluran'}
-                                                />
+                                                <Eye size={15} /> Lihat
                                             </a>
-                                            <div className="ad-dist-photo-info">
-                                                <strong>
-                                                    {document.caption || 'Dokumentasi kegiatan'}
-                                                </strong>
-                                                <span>
-                                                    {document.document_date || '-'}
-                                                </span>
-                                                <div className="ad-dist-photo-actions">
-                                                    <a
-                                                        href={`/storage/${document.file_path}`}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                    >
-                                                        <Eye size={15} /> Lihat
-                                                    </a>
-                                                    {canEdit && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => deleteDocument(document.id)}
-                                                        >
-                                                            <Trash2 size={15} /> Hapus
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </article>
-                                    ))
-                                )}
-                            </div>
-                        </section>
 
-                        <section className="ad-panel ad-dist-section">
-                            <div className="ad-dist-heading">
-                                <div>
-                                    <h3>Ringkasan pengeluaran kegiatan</h3>
-                                    <p>
-                                        Pengeluaran yang terkait dengan kegiatan penyaluran ini.
-                                    </p>
-                                </div>
-                                <WalletIcon size={25} />
-                            </div>
-
-                            <div className="ad-dist-expense-summary">
-                                <div>
-                                    <span>Total pengeluaran</span>
-                                    <strong>{rupiah(expenseSummary.total)}</strong>
-                                </div>
-                                <div>
-                                    <span>Disetujui</span>
-                                    <strong>{rupiah(expenseSummary.approved)}</strong>
-                                </div>
-                                <div>
-                                    <span>Menunggu persetujuan</span>
-                                    <strong>{rupiah(expenseSummary.pending)}</strong>
-                                </div>
-                            </div>
-
-                            {expenses.length > 0 && (
-                                <div className="ad-dist-expense-list">
-                                    {expenses.map(expense => (
-                                        <div key={expense.id}>
-                                            <span>
-                                                <strong>{expense.expense_category}</strong>
-                                                <small>{expense.description}</small>
-                                            </span>
-                                            <strong>{rupiah(expense.amount)}</strong>
+                                            {canEdit && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        deleteDocument(document.id)
+                                                    }
+                                                >
+                                                    <Trash2 size={15} /> Hapus
+                                                </button>
+                                            )}
                                         </div>
-                                    ))}
+                                    </div>
+                                </article>
+                            ))
+                        )}
+                    </div>
+                </section>
+
+                <section className="ad-panel ad-dist-section">
+                    <div className="ad-dist-heading">
+                        <div>
+                            <h3>Ringkasan pengeluaran kegiatan</h3>
+                            <p>
+                                Pengeluaran yang terkait dengan kegiatan
+                                penyaluran ini.
+                            </p>
+                        </div>
+                        <Wallet size={25} />
+                    </div>
+
+                    <div className="ad-dist-expense-summary">
+                        <div>
+                            <span>Total pengeluaran</span>
+                            <strong>
+                                {rupiah(expenseSummary.total)}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Disetujui</span>
+                            <strong>
+                                {rupiah(expenseSummary.approved)}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Menunggu persetujuan</span>
+                            <strong>
+                                {rupiah(expenseSummary.pending)}
+                            </strong>
+                        </div>
+                    </div>
+
+                    {expenses.length > 0 && (
+                        <div className="ad-dist-expense-list">
+                            {expenses.map(expense => (
+                                <div key={expense.id}>
+                                    <span>
+                                        <strong>
+                                            {expense.expense_category}
+                                        </strong>
+                                        <small>
+                                            {expense.description}
+                                        </small>
+                                    </span>
+                                    <strong>
+                                        {rupiah(expense.amount)}
+                                    </strong>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </section>
+
+                <section className="ad-dist-submit-panel">
+                    <div>
+                        <h3>Pengajuan laporan kegiatan</h3>
+                        <p>
+                            Pastikan realisasi sudah disimpan dan minimal
+                            satu dokumentasi sudah diunggah sebelum
+                            mengajukan laporan.
+                        </p>
+                    </div>
+
+                    {distribution.report_status === 'pending' ? (
+                        <div className="ad-dist-locked">
+                            <Clock3 size={20} />
+                            Laporan sedang menunggu pemeriksaan Superadmin.
+                        </div>
+                    ) : distribution.report_status === 'approved' ? (
+                        <div className="ad-dist-approved">
+                            <CheckCircle2 size={20} />
+                            Laporan telah disetujui Superadmin.
+                        </div>
+                    ) : (
+                        <>
+                            {!canSubmit && (
+                                <div className="ad-dist-hint">
+                                    <AlertCircle size={18} />
+                                    {distribution.status !== 'completed'
+                                        ? 'Ubah status kegiatan menjadi Selesai sebelum mengajukan laporan.'
+                                        : 'Unggah minimal satu foto dokumentasi sebelum mengajukan laporan.'}
                                 </div>
                             )}
-                        </section>
 
-                        <section className="ad-dist-submit-panel">
-                            <div>
-                                <h3>Pengajuan laporan kegiatan</h3>
-                                <p>
-                                    Pastikan realisasi sudah disimpan dan minimal satu
-                                    dokumentasi sudah diunggah sebelum mengajukan laporan.
-                                </p>
-                            </div>
-
-                            {distribution.report_status === 'pending' ? (
-                                <div className="ad-dist-locked">
-                                    <Clock3 size={20} />
-                                    Laporan sedang menunggu pemeriksaan Superadmin.
-                                </div>
-                            ) : distribution.report_status === 'approved' ? (
-                                <div className="ad-dist-approved">
-                                    <CheckCircle2 size={20} />
-                                    Laporan telah disetujui Superadmin.
-                                </div>
-                            ) : (
-                                <>
-                                    {!canSubmit && (
-                                        <div className="ad-dist-hint">
-                                            <AlertCircle size={18} />
-                                            {distribution.status !== 'completed'
-                                                ? 'Ubah status kegiatan menjadi Selesai sebelum mengajukan laporan.'
-                                                : 'Unggah minimal satu foto dokumentasi sebelum mengajukan laporan.'}
-                                        </div>
-                                    )}
-
-                                    <button
-                                        type="button"
-                                        className="ad-dist-submit-button"
-                                        disabled={!canSubmit}
-                                        onClick={submitReport}
-                                    >
-                                        <Send size={18} />
-                                        Ajukan laporan kepada Superadmin
-                                    </button>
-                                </>
-                            )}
-                        </section>
-                    </main>
-
-                    <footer className="ad-footer">
-                        © {new Date().getFullYear()} Sedekah Berkah
-                        <span>Admin Operational Panel</span>
-                    </footer>
-                </div>
+                            <button
+                                type="button"
+                                className="ad-dist-submit-button"
+                                disabled={!canSubmit}
+                                onClick={submitReport}
+                            >
+                                <Send size={18} />
+                                Ajukan laporan kepada Superadmin
+                            </button>
+                        </>
+                    )}
+                </section>
             </div>
-        </>
+        </AdminLayout>
     );
 }

@@ -77,15 +77,21 @@ class DistributionController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        $expenseSummary = [
-            'total' => (int) $expenses->sum('amount'),
-            'approved' => (int) $expenses
-                ->where('approval_status', 'approved')
-                ->sum('amount'),
-            'pending' => (int) $expenses
-                ->where('approval_status', 'pending')
-                ->sum('amount'),
-        ];
+            $realExpenses = $expenses->filter(function ($expense) {
+                return !(bool) $expense->is_simulated;
+            });
+            
+            $expenseSummary = [
+                'total' => (int) $realExpenses->sum('amount'),
+            
+                'approved' => (int) $realExpenses
+                    ->where('approval_status', 'approved')
+                    ->sum('amount'),
+            
+                'pending' => (int) $realExpenses
+                    ->where('approval_status', 'pending')
+                    ->sum('amount'),
+            ];
 
         return Inertia::render('Admin/Distributions/Show', [
             'distribution' => $distribution,

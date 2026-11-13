@@ -27,9 +27,15 @@ class ExpenseController extends Controller
             ->orderBy('title')
             ->get(['id', 'title']),
 
-        'distributions' => Distribution::with('campaign:id,title')
+            'distributions' => Distribution::with('campaign:id,title')
             ->latest()
-            ->get(['id', 'campaign_id', 'title', 'status']),
+            ->get([
+                'id',
+                'campaign_id',
+                'title',
+                'status',
+                'is_simulated',
+            ]),
     ]);
 }
 
@@ -50,6 +56,13 @@ public function store(Request $request)
         'amount' => ['required', 'integer', 'min:1000', 'max:100000000'],
         'receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
     ]);
+    $distribution = null;
+
+    if ($data['expense_type'] === 'distribution_detail') {
+        $distribution = Distribution::findOrFail(
+            $data['distribution_id']
+        );
+    }
 
     $receiptPath = null;
 
@@ -59,14 +72,22 @@ public function store(Request $request)
 
     Expense::create([
         'expense_type' => $data['expense_type'],
-        'distribution_id' => $data['expense_type'] === 'distribution_detail'
-            ? $data['distribution_id']
-            : null,
-        'campaign_id' => $data['campaign_id'] ?? null,
+    
+        'distribution_id' => $distribution?->id,
+    
+        'campaign_id' => $distribution
+            ? $distribution->campaign_id
+            : ($data['campaign_id'] ?? null),
+    
         'expense_category' => $data['expense_category'],
         'description' => $data['description'],
         'amount' => $data['amount'],
         'receipt_file' => $receiptPath,
+    
+        'is_simulated' => $distribution
+            ? (bool) $distribution->is_simulated
+            : false,
+    
         'approval_status' => 'pending',
         'submitted_by' => Auth::id(),
     ]);

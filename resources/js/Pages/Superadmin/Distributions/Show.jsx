@@ -258,19 +258,7 @@ export default function Show({
                         flexWrap: 'wrap',
                         alignItems: 'center',
                     }}>
-                        {isSimulated && (
-                            <span style={{
-                                padding: '8px 12px',
-                                background: '#fff1f2',
-                                color: '#be123c',
-                                border: '1px solid #fecdd3',
-                                borderRadius: 8,
-                                fontSize: 13,
-                                fontWeight: 700,
-                            }}>
-                                DATA SIMULASI
-                            </span>
-                        )}
+                        
 
                         <span style={{
                             padding: '8px 12px',
@@ -466,14 +454,6 @@ export default function Show({
     }}>
         <strong>✓ Laporan telah disetujui Superadmin.</strong>
 
-        {isSimulated && (
-            <p style={{ marginBottom: 12 }}>
-                <strong>DATA SIMULASI</strong>
-                <br />
-                Data ini hanya untuk pengujian sistem dan tidak boleh
-                dipublikasikan sebagai laporan kegiatan nyata.
-            </p>
-        )}
 
         <p style={{ marginBottom: 12 }}>
             Status publikasi:{' '}
@@ -997,7 +977,8 @@ export default function Show({
                                             {expense.expense_category}
                                         </td>
                                         <td style={{ padding: 13 }}>
-                                            {expense.description}
+                                            <div>{expense.description}</div>
+
                                         </td>
                                         <td style={{ padding: 13 }}>
                                             {rupiah(expense.amount)}

@@ -131,7 +131,7 @@ export default function Index({ expenses }) {
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="se-empty">
+                                        <td colSpan="8" className="se-empty">
                                             <Wallet size={30} />
                                             <strong>
                                                 Belum ada pengajuan pengeluaran
@@ -144,7 +144,7 @@ export default function Index({ expenses }) {
                                 ) : filtered.map((item) => (
                                     <tr key={item.id}>
                                         <td>
-                                            <strong>{item.expense_category}</strong>
+                                        <strong>{item.expense_category}</strong>
 
                                             <small>
                                                 {item.expense_type === 'distribution_detail'
@@ -259,9 +259,9 @@ export default function Index({ expenses }) {
 
                 <div className="se-note">
                     <Clock size={18} />
-                    Hanya pengeluaran berstatus Disetujui yang mengurangi
-                    saldo tersedia. Pengajuan Menunggu dan Ditolak tidak
-                    mengurangi saldo.
+                    Hanya pengeluaran nyata berstatus Disetujui yang mengurangi
+                    saldo tersedia. Data simulasi tidak memengaruhi saldo nyata.
+                    Pengajuan Menunggu dan Ditolak juga tidak mengurangi saldo.
                 </div>
             </div>
         </SuperadminLayout>

@@ -13,17 +13,22 @@ class DistributionController extends Controller
     public function index(Request $request)
     {
         $summary = [
-            'totalActivities' => DB::table('distributions')->count(),
-
+            'totalActivities' => DB::table('distributions')
+                ->where('is_simulated', false)
+                ->count(),
+        
             'totalDistributed' => (int) DB::table('distributions')
+                ->where('is_simulated', false)
                 ->where('status', 'completed')
                 ->sum('total_cost'),
-
+        
             'totalRecipients' => (int) DB::table('distributions')
+                ->where('is_simulated', false)
                 ->where('status', 'completed')
                 ->sum('actual_quantity'),
-
+        
             'pendingReports' => DB::table('distributions')
+                ->where('is_simulated', false)
                 ->where('report_status', 'pending')
                 ->count(),
         ];
@@ -152,15 +157,21 @@ public function show(string $id)
         ->orderByDesc('created_at')
         ->get();
 
-    $expenseSummary = [
-        'total' => (int) $expenses->sum('amount'),
-        'approved' => (int) $expenses
-            ->where('approval_status', 'approved')
-            ->sum('amount'),
-        'pending' => (int) $expenses
-            ->where('approval_status', 'pending')
-            ->sum('amount'),
-    ];
+        $realExpenses = $expenses->filter(function ($expense) {
+            return !(bool) $expense->is_simulated;
+        });
+        
+        $expenseSummary = [
+            'total' => (int) $realExpenses->sum('amount'),
+        
+            'approved' => (int) $realExpenses
+                ->where('approval_status', 'approved')
+                ->sum('amount'),
+        
+            'pending' => (int) $realExpenses
+                ->where('approval_status', 'pending')
+                ->sum('amount'),
+        ];
 
     return Inertia::render('Superadmin/Distributions/Show', [
         'distribution' => $distribution,
@@ -519,6 +530,11 @@ public function publish(string $id)
             ->first();
 
         abort_if(!$distribution, 404);
+        abort_if(
+            (bool) $distribution->is_simulated,
+            403,
+            'Data simulasi tidak boleh dipublikasikan ke halaman transparansi publik.'
+        );
 
         abort_if(
             $distribution->status !== 'completed',

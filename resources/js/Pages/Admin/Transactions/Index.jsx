@@ -268,20 +268,6 @@ export default function TransactionIndex({
                                                         <span className={`st-status ${item.payment_status}`}>
                                                             {statusLabels[item.payment_status] || item.payment_status}
                                                         </span>
-
-                                                        {Boolean(Number(item.is_simulated)) && (
-                                                            <span style={{
-                                                                background: '#fff1cc',
-                                                                color: '#946200',
-                                                                padding: '4px 8px',
-                                                                borderRadius: 6,
-                                                                fontSize: 10,
-                                                                fontWeight: 700,
-                                                                letterSpacing: '0.5px',
-                                                            }}>
-                                                                SIMULASI
-                                                            </span>
-                                                        )}
                                                     </div>
                                                 </td>
 
