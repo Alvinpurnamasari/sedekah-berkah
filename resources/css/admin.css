@@ -1223,3 +1223,248 @@
         grid-column: auto;
     }
 }
+
+/* Dokumentasi Admin */
+.ad-doc-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.ad-doc-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.ad-doc-summary-card {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 20px;
+}
+
+.ad-doc-summary-icon {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.ad-doc-summary-card span,
+.ad-doc-summary-card strong {
+    display: block;
+}
+
+.ad-doc-summary-card span {
+    color: #64748b;
+    font-size: 13px;
+}
+
+.ad-doc-summary-card strong {
+    color: #172554;
+    font-size: 24px;
+    margin-top: 4px;
+}
+
+.ad-doc-filter-heading,
+.ad-doc-gallery-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.ad-doc-filter-heading h3,
+.ad-doc-gallery-heading h3 {
+    margin: 0 0 6px;
+    color: #172554;
+}
+
+.ad-doc-filter-heading p,
+.ad-doc-gallery-heading p {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.ad-doc-filter-heading > svg,
+.ad-doc-gallery-heading > svg {
+    color: #059669;
+}
+
+.ad-doc-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.ad-doc-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 16px;
+    border: 0;
+    background: transparent;
+    color: #047857;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.ad-doc-gallery {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.ad-doc-card {
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 13px;
+    background: #fff;
+}
+
+.ad-doc-media {
+    position: relative;
+    height: 210px;
+    background: #f1f5f9;
+}
+
+.ad-doc-media img,
+.ad-doc-media video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.ad-doc-type {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 9px;
+    border-radius: 20px;
+    background: rgba(15, 23, 42, .82);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.ad-doc-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+}
+
+.ad-doc-card-body > strong {
+    color: #172554;
+    font-size: 14px;
+}
+
+.ad-doc-card-body > span {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.ad-doc-detail-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 8px;
+    background: #ecfdf5;
+    color: #047857;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.ad-doc-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 55px 20px;
+    color: #64748b;
+    text-align: center;
+}
+
+.ad-doc-empty svg {
+    color: #94a3b8;
+}
+
+.ad-doc-empty strong {
+    color: #334155;
+}
+
+.ad-doc-empty span {
+    font-size: 13px;
+}
+
+.ad-doc-pagination {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 24px;
+}
+
+.ad-doc-pagination button {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    background: #fff;
+    color: #334155;
+    cursor: pointer;
+}
+
+.ad-doc-pagination button.active {
+    background: #047857;
+    color: #fff;
+    border-color: #047857;
+}
+
+.ad-doc-pagination button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+    .ad-doc-gallery {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .ad-doc-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .ad-doc-filter-grid,
+    .ad-doc-gallery {
+        grid-template-columns: 1fr;
+    }
+
+    .ad-doc-media {
+        height: 220px;
+    }
+}

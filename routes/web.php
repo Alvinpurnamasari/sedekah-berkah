@@ -17,6 +17,7 @@ use App\Http\Controllers\Superadmin\ReportController;
 use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\BeneficiaryTargetController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
+use App\Http\Controllers\Admin\DocumentationController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -260,6 +261,14 @@ Route::middleware('role:admin')
             Route::post('/{id}/ajukan-laporan', [AdminDistributionController::class, 'submitReport'])
                 ->name('submit-report');
         });
+
+        // Dokumentasi kegiatan Admin
+        Route::middleware('role:admin')
+        ->get('/admin/dokumentasi', [
+            DocumentationController::class,
+            'index'
+        ])
+        ->name('admin.documentation.index');
 
     Route::get('/superadmin', function () {
 

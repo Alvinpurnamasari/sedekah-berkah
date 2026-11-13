@@ -60,7 +60,7 @@ export default function Show({
     });
 
     const documentForm = useForm({
-        photo: null,
+        media: null,
         caption: '',
         document_date: new Date().toISOString().slice(0, 10),
     });
@@ -369,7 +369,7 @@ export default function Show({
                         <div>
                             <h3>Dokumentasi kegiatan</h3>
                             <p>
-                                Unggah foto kegiatan sebagai bukti penyaluran.
+                                Unggah foto atau video kegiatan sebagai bukti penyaluran.
                             </p>
                         </div>
                         <ImageIcon size={25} />
@@ -382,26 +382,27 @@ export default function Show({
                         >
                             <div className="ad-dist-form-grid">
                                 <div className="ad-dist-field">
-                                    <label>Foto dokumentasi *</label>
-                                    <input
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp"
-                                        onChange={e =>
-                                            documentForm.setData(
-                                                'photo',
-                                                e.target.files[0] || null
-                                            )
-                                        }
-                                        required
-                                    />
-                                    <small>
-                                        JPG, PNG, WEBP. Maksimal 5 MB.
+                                <label>Foto atau video dokumentasi *</label>
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
+                                    onChange={e =>
+                                        documentForm.setData(
+                                            'media',
+                                            e.target.files[0] || null
+                                        )
+                                    }
+                                    required
+                                />
+                                <small>
+                                    Foto: JPG, PNG, WEBP maksimal 5 MB.
+                                    Video: MP4, MOV, WEBM maksimal 50 MB.
+                                </small>
+                                {documentForm.errors.media && (
+                                    <small className="ad-dist-error">
+                                        {documentForm.errors.media}
                                     </small>
-                                    {documentForm.errors.photo && (
-                                        <small className="ad-dist-error">
-                                            {documentForm.errors.photo}
-                                        </small>
-                                    )}
+                                )}
                                 </div>
 
                                 <div className="ad-dist-field">
@@ -419,7 +420,7 @@ export default function Show({
                                 </div>
 
                                 <div className="ad-dist-field ad-dist-full">
-                                    <label>Keterangan foto</label>
+                                    <label>Keterangan dokumentasi</label>
                                     <input
                                         type="text"
                                         maxLength="255"
@@ -454,7 +455,7 @@ export default function Show({
                                 <ImageIcon size={34} />
                                 <strong>Belum ada dokumentasi</strong>
                                 <span>
-                                    Foto kegiatan yang diunggah akan tampil
+                                    Foto dan video kegiatan yang diunggah akan tampil
                                     di sini.
                                 </span>
                             </div>
@@ -464,19 +465,35 @@ export default function Show({
                                     className="ad-dist-photo-card"
                                     key={document.id}
                                 >
-                                    <a
-                                        href={`/storage/${document.file_path}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        <img
+                                    {document.file_type === 'video' ? (
+                                        <video
                                             src={`/storage/${document.file_path}`}
-                                            alt={
-                                                document.caption ||
-                                                'Dokumentasi penyaluran'
-                                            }
-                                        />
-                                    </a>
+                                            controls
+                                            preload="metadata"
+                                            style={{
+                                                width: '100%',
+                                                height: 200,
+                                                objectFit: 'cover',
+                                                background: '#000',
+                                            }}
+                                        >
+                                            Browser tidak mendukung pemutaran video.
+                                        </video>
+                                    ) : (
+                                        <a
+                                            href={`/storage/${document.file_path}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                        >
+                                            <img
+                                                src={`/storage/${document.file_path}`}
+                                                alt={
+                                                    document.caption ||
+                                                    'Dokumentasi penyaluran'
+                                                }
+                                            />
+                                        </a>
+                                    )}
 
                                     <div className="ad-dist-photo-info">
                                         <strong>
@@ -597,7 +614,7 @@ export default function Show({
                                     <AlertCircle size={18} />
                                     {distribution.status !== 'completed'
                                         ? 'Ubah status kegiatan menjadi Selesai sebelum mengajukan laporan.'
-                                        : 'Unggah minimal satu foto dokumentasi sebelum mengajukan laporan.'}
+                                        : 'Unggah minimal satu dokumentasi foto atau video sebelum mengajukan laporan.'}
                                 </div>
                             )}
 

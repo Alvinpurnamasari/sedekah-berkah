@@ -55,8 +55,11 @@ class CampaignController extends Controller
             'filters' => $request->only('search', 'status'),
             'statuses' => [
                 'draft' => 'Draft',
-                'active' => 'Aktif',
-                'published' => 'Published',
+                'pending_approval' => 'Menunggu Persetujuan',
+                'published' => 'Dipublikasikan',
+                'active' => 'Berlangsung',
+                'rejected' => 'Ditolak',
+                'inactive' => 'Nonaktif',
             ],
         ]);
     }

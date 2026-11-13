@@ -54,6 +54,7 @@ const adminMenus = [
         id: 'documentation',
         label: 'Dokumentasi',
         icon: Images,
+        url: '/admin/dokumentasi',
     },
     {
         id: 'expenses',

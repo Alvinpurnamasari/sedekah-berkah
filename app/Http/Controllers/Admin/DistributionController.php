@@ -163,70 +163,97 @@ class DistributionController extends Controller
             ->with('success', 'Realisasi penyaluran berhasil disimpan.');
     }
 
-    /**
-     * Mengunggah dokumentasi penyaluran.
-     */
-    public function uploadDocument(Request $request, string $id)
-    {
-        $validated = $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'caption' => ['nullable', 'string', 'max:255'],
-            'document_date' => ['nullable', 'date'],
-        ]);
 
-        $distribution = DB::table('distributions')
-            ->where('id', $id)
-            ->first();
+/**
+ * Mengunggah dokumentasi foto atau video penyaluran.
+ */
+public function uploadDocument(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'media' => [
+            'required',
+            'file',
+            'mimes:jpg,jpeg,png,webp,mp4,mov,webm',
+            'max:51200',
+        ],
+        'caption' => ['nullable', 'string', 'max:255'],
+        'document_date' => ['nullable', 'date'],
+    ]);
 
-        abort_if(!$distribution, 404);
+    $distribution = DB::table('distributions')
+        ->where('id', $id)
+        ->first();
 
-        abort_if(
-            !in_array($distribution->report_status, ['draft', 'revision']),
-            403,
-            'Dokumentasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
-        );
+    abort_if(!$distribution, 404);
 
-        $filePath = $request->file('photo')
-            ->store('distribution-documents', 'public');
+    abort_if(
+        !in_array($distribution->report_status, ['draft', 'revision']),
+        403,
+        'Dokumentasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
+    );
 
-        try {
-            DB::transaction(function () use ($validated, $id, $filePath, $request) {
-                $documentId = DB::table('distribution_documents')
-                    ->insertGetId([
-                        'distribution_id' => $id,
-                        'file_path' => $filePath,
-                        'caption' => $validated['caption'] ?? null,
-                        'document_date' => $validated['document_date'] ?? null,
-                        'uploaded_by' => auth()->id(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+    $file = $request->file('media');
+    $mimeType = $file->getMimeType();
+    $fileType = str_starts_with($mimeType, 'video/')
+        ? 'video'
+        : 'photo';
 
-                DB::table('audit_logs')->insert([
-                    'user_id' => auth()->id(),
-                    'action' => 'distribution_document_uploaded',
-                    'entity_type' => 'distribution',
-                    'entity_id' => $id,
-                    'metadata' => json_encode([
-                        'document_id' => $documentId,
-                        'file_path' => $filePath,
-                        'caption' => $validated['caption'] ?? null,
-                        'actor' => 'admin',
-                    ]),
-                    'ip_address' => $request->ip(),
+    // Foto maksimal 5 MB, video maksimal 50 MB.
+    if ($fileType === 'photo' && $file->getSize() > 5 * 1024 * 1024) {
+        return back()
+            ->withErrors(['media' => 'Ukuran foto maksimal 5 MB.'])
+            ->withInput();
+    }
+
+    $filePath = $file->store('distribution-documents', 'public');
+
+    try {
+        DB::transaction(function () use (
+            $validated,
+            $id,
+            $filePath,
+            $fileType,
+            $request
+        ) {
+            $documentId = DB::table('distribution_documents')
+                ->insertGetId([
+                    'distribution_id' => $id,
+                    'file_path' => $filePath,
+                    'file_type' => $fileType,
+                    'caption' => $validated['caption'] ?? null,
+                    'document_date' => $validated['document_date'] ?? null,
+                    'uploaded_by' => auth()->id(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-            });
-        } catch (\Throwable $e) {
-            Storage::disk('public')->delete($filePath);
-            throw $e;
-        }
 
-        return redirect()
-            ->route('admin.distributions.show', $id)
-            ->with('success', 'Dokumentasi berhasil diunggah.');
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => 'distribution_document_uploaded',
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'document_id' => $documentId,
+                    'file_path' => $filePath,
+                    'file_type' => $fileType,
+                    'caption' => $validated['caption'] ?? null,
+                    'actor' => 'admin',
+                ]),
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+    } catch (\Throwable $e) {
+        Storage::disk('public')->delete($filePath);
+        throw $e;
     }
+
+    return redirect()
+        ->route('admin.distributions.show', $id)
+        ->with('success', 'Dokumentasi berhasil diunggah.');
+}
+
 
     /**
      * Menghapus dokumentasi penyaluran.
