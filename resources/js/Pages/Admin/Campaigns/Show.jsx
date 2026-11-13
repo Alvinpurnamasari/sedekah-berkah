@@ -60,7 +60,7 @@ export default function CampaignShow({ campaign, flash = {} }) {
         ? Math.min((collected / target) * 100, 100)
         : 0;
 
-    const isDraft = campaign.status === 'draft';
+        const canEdit = ['draft', 'rejected'].includes(campaign.status);
 
     const canSubmitApproval = ['draft', 'rejected'].includes(campaign.status);
 
@@ -118,7 +118,7 @@ export default function CampaignShow({ campaign, flash = {} }) {
                             Kembali
                         </button>
 
-                        {isDraft && (
+                        {canEdit && (
                             <button
                                 type="button"
                                 className="sc-primary"

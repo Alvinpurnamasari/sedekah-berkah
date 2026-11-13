@@ -10,7 +10,15 @@ class Campaign extends Model
     protected $keyType = 'string';
 
     public $incrementing = false;
-    
+
+    protected static function booted(): void
+{
+    static::creating(function ($campaign) {
+        if (empty($campaign->id)) {
+            $campaign->id = (string) \Illuminate\Support\Str::uuid();
+        }
+    });
+}
     protected $fillable = [
         'category_id',
         'title',

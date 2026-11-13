@@ -57,7 +57,7 @@ Route::get('/program', function () {
                 ->where('donations.payment_status', 'paid')
                 ->where('donations.is_simulated', false);
         }, 'beneficiary_names')
-        ->where('campaigns.status', '!=', 'draft')
+        ->whereIn('campaigns.status', ['published', 'active'])
         ->orderByDesc('campaigns.created_at')
         ->get()
         ->map(function ($campaign) {

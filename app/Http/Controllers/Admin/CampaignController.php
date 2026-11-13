@@ -148,11 +148,11 @@ class CampaignController extends Controller
         $campaign = Campaign::with('beneficiaryTargets')
             ->findOrFail($id);
 
-        abort_if(
-            $campaign->status !== 'draft',
-            403,
-            'Admin hanya dapat mengedit program yang masih berstatus Draft.'
-        );
+            abort_if(
+                !in_array($campaign->status, ['draft', 'rejected'], true),
+                403,
+                'Admin hanya dapat mengedit program Draft atau Rejected.'
+            );
 
         return Inertia::render('Admin/Campaigns/Form', [
             'campaign' => $campaign,
@@ -171,9 +171,9 @@ class CampaignController extends Controller
         $campaign = Campaign::findOrFail($id);
 
         abort_if(
-            $campaign->status !== 'draft',
+            !in_array($campaign->status, ['draft', 'rejected'], true),
             403,
-            'Program ini tidak dapat diedit oleh Admin karena bukan Draft.'
+            'Admin hanya dapat mengubah program Draft atau Rejected.'
         );
 
         $data = $this->validateCampaign($request);
