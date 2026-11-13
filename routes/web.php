@@ -192,6 +192,11 @@ Route::middleware('role:admin')
 
         Route::get('/{id}', [AdminCampaignController::class, 'show'])
             ->name('show');
+
+            Route::post('/{id}/ajukan-persetujuan', [
+                AdminCampaignController::class,
+                'submitForApproval'
+            ])->name('submit-approval');
     });
 
     Route::middleware('role:admin')
@@ -348,6 +353,21 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     
     Route::put('/program/{id}', [CampaignManagementController::class, 'update'])
         ->name('campaigns.update');
+    // Persetujuan dan pengelolaan publikasi program
+    Route::post('/program/{id}/setujui', [
+        CampaignManagementController::class,
+        'approve'
+    ])->name('campaigns.approve');
+
+    Route::post('/program/{id}/tolak', [
+        CampaignManagementController::class,
+        'reject'
+    ])->name('campaigns.reject');
+
+    Route::post('/program/{id}/nonaktifkan', [
+        CampaignManagementController::class,
+        'deactivate'
+    ])->name('campaigns.deactivate');
         
     Route::delete('/program/{id}', [CampaignManagementController::class, 'destroy'])
         ->name('campaigns.destroy');
@@ -427,6 +447,7 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::get('/laporan/excel', [ReportController::class, 'exportExcel'])
         ->name('reports.excel');
 
+        
 });
 
 });

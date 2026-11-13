@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Donation extends Model
 {
@@ -34,4 +35,8 @@ class Donation extends Model
     {
         return $this->belongsTo(Campaign::class);
     }
+    public function user(): BelongsTo
+{
+    return $this->belongsTo(User::class);
+}
 }

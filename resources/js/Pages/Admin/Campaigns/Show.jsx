@@ -10,6 +10,7 @@ import {
     Target,
     Wallet,
     Megaphone,
+    Send,
 } from 'lucide-react';
 import '../../../../css/superadmin-campaigns.css';
 
@@ -33,8 +34,10 @@ const formatDate = (value) => {
 
 const statusLabel = {
     draft: 'Draft',
-    active: 'Aktif',
+    pending_approval: 'Menunggu Persetujuan',
     published: 'Published',
+    active: 'Aktif',
+    rejected: 'Ditolak',
 };
 
 export default function CampaignShow({ campaign, flash = {} }) {
@@ -58,6 +61,20 @@ export default function CampaignShow({ campaign, flash = {} }) {
         : 0;
 
     const isDraft = campaign.status === 'draft';
+
+    const canSubmitApproval = ['draft', 'rejected'].includes(campaign.status);
+
+    const submitForApproval = () => {
+        if (!window.confirm(
+            'Ajukan program ini kepada Superadmin untuk diperiksa dan dipublikasikan?'
+        )) {
+            return;
+        }
+
+        router.post(
+            `/admin/program/${campaign.id}/ajukan-persetujuan`
+        );
+    };
 
     return (
         <AdminLayout
@@ -111,6 +128,17 @@ export default function CampaignShow({ campaign, flash = {} }) {
                             >
                                 <Pencil size={17} />
                                 Edit Program
+                            </button>
+                        )}
+
+                        {canSubmitApproval && (
+                            <button
+                                type="button"
+                                className="sc-primary"
+                                onClick={submitForApproval}
+                            >
+                                <Send size={17} />
+                                Ajukan Persetujuan
                             </button>
                         )}
                     </div>
@@ -244,9 +272,15 @@ export default function CampaignShow({ campaign, flash = {} }) {
                     <div className="mt-8 rounded-lg bg-amber-50 border border-amber-200 p-4">
                         <strong>Status Pengelolaan Program</strong>
                         <p className="mt-1 text-sm">
-                            {isDraft
-                                ? 'Program masih berstatus Draft dan menunggu pemeriksaan serta persetujuan Superadmin.'
-                                : 'Program telah berada pada status aktif. Admin dapat melihat informasi, tetapi tidak dapat mengubah status publikasi.'}
+                            {campaign.status === 'draft'
+                                ? 'Program masih berupa Draft. Silakan periksa kembali lalu ajukan kepada Superadmin.'
+                                : campaign.status === 'pending_approval'
+                                ? 'Program sedang menunggu pemeriksaan dan persetujuan Superadmin.'
+                                : campaign.status === 'rejected'
+                                ? `Program ditolak oleh Superadmin. Alasan: ${campaign.rejection_reason || 'Tidak ada keterangan.'} Silakan perbaiki dan ajukan kembali.`
+                                : campaign.status === 'published'
+                                ? 'Program telah disetujui dan dipublikasikan. Program dapat menerima donasi.'
+                                : 'Program sedang tidak aktif.'}
                         </p>
                     </div>
                 </section>

@@ -3,15 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Campaign extends Model
 {
-    use HasUuids;
+    
+    protected $keyType = 'string';
 
+    public $incrementing = false;
+    
     protected $fillable = [
         'category_id',
         'title',
@@ -21,39 +20,51 @@ class Campaign extends Model
         'target_beneficiaries',
         'start_date',
         'end_date',
-        'location',
         'status',
+        'location',
+
+        // Informasi pengajuan dan persetujuan
+        'submitted_by',
+        'submitted_at',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
     ];
 
-    protected function casts(): array
+    protected $casts = [
+        'start_date' => 'date',
+        'end_date' => 'date',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
+    ];
+
+    public function donations()
     {
-        return [
-            'target_amount' => 'integer',
-            'target_beneficiaries' => 'integer',
-            'start_date' => 'date',
-            'end_date' => 'date',
-        ];
+        return $this->hasMany(Donation::class);
     }
 
-    public function beneficiaryTargets(): BelongsToMany
+    public function category()
+    {
+        return $this->belongsTo(CampaignCategory::class, 'category_id');
+    }
+
+    public function beneficiaryTargets()
     {
         return $this->belongsToMany(
             BeneficiaryTarget::class,
             'campaign_beneficiary_target',
             'campaign_id',
             'beneficiary_target_id'
-        )->withTimestamps();
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(
-            CampaignCategory::class,
-            'category_id'
         );
     }
-    public function donations(): HasMany
-{
-    return $this->hasMany(Donation::class, 'campaign_id');
-}
+
+    public function submitter()
+    {
+        return $this->belongsTo(User::class, 'submitted_by');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
 }

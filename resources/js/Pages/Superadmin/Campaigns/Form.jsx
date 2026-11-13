@@ -20,7 +20,6 @@ export default function CampaignForm({
         start_date: campaign?.start_date?.substring(0, 10) || '',
         end_date: campaign?.end_date?.substring(0, 10) || '',
         location: campaign?.location || 'Yogyakarta',
-        status: campaign?.status || 'draft',
         beneficiary_targets: campaign?.beneficiary_targets?.map(item => item.id) || [],
     });
 
@@ -194,19 +193,6 @@ export default function CampaignForm({
                                 placeholder="Yogyakarta"
                             />
                             {form.errors.location && <small className="sc-error">{form.errors.location}</small>}
-                        </div>
-
-                        <div className="sc-field">
-                            <label>Status Program *</label>
-                            <select
-                                value={form.data.status}
-                                onChange={e => form.setData('status', e.target.value)}
-                            >
-                                <option value="draft">Draft</option>
-                                <option value="active">Aktif</option>
-                                <option value="published">Published</option>
-                            </select>
-                            {form.errors.status && <small className="sc-error">{form.errors.status}</small>}
                         </div>
                     </div>
 

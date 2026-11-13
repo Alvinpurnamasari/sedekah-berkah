@@ -312,4 +312,47 @@ class CampaignController extends Controller
             'updated_at' => now(),
         ]);
     }
+
+    /**
+     * Admin mengajukan kampanye untuk persetujuan Superadmin.
+     */
+    public function submitForApproval(Request $request, string $id)
+    {
+        $campaign = Campaign::findOrFail($id);
+
+        abort_if(
+            !in_array($campaign->status, ['draft', 'rejected'], true),
+            403,
+            'Hanya program Draft atau Rejected yang dapat diajukan.'
+        );
+
+        DB::transaction(function () use ($campaign, $request) {
+            $campaign->update([
+                'status' => 'pending_approval',
+                'submitted_by' => $request->user()->id,
+                'submitted_at' => now(),
+                'approved_by' => null,
+                'approved_at' => null,
+                'rejection_reason' => null,
+            ]);
+
+            $this->writeAuditLog(
+                'campaign_submitted_for_approval',
+                $campaign,
+                [
+                    'title' => $campaign->title,
+                    'status' => 'pending_approval',
+                ],
+                $request
+            );
+        });
+
+        return redirect()
+            ->route('admin.campaigns.show', $campaign->id)
+            ->with(
+                'success',
+                'Program berhasil diajukan dan menunggu persetujuan Superadmin.'
+            );
+    }
+
 }

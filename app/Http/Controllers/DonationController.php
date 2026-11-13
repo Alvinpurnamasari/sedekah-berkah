@@ -12,7 +12,7 @@ public function store(Request $request)
 {
     $data = $request->validate([
         'campaign_id' => 'required|exists:campaigns,id',
-        'beneficiary_target_id' => 'nullable|exists:beneficiary_targets,id',
+        'beneficiary_target_id' => 'nullable|integer|exists:beneficiary_targets,id',
         'donor.name' => 'required|string|max:120',
         'donor.email' => 'nullable|email|max:190',
         'donor.phone' => 'nullable|string|max:30',
@@ -26,7 +26,21 @@ public function store(Request $request)
         ->whereIn('status', ['published', 'active'])
         ->firstOrFail();
 
-    $donation = DB::transaction(function () use ($data, $campaign) {
+    // Pastikan target penerima terhubung dengan kampanye dan masih aktif.
+    if (!empty($data['beneficiary_target_id'])) {
+        $targetExists = $campaign->beneficiaryTargets()
+            ->where('beneficiary_targets.id', $data['beneficiary_target_id'])
+            ->where('beneficiary_targets.is_active', true)
+            ->exists();
+
+        if (!$targetExists) {
+            throw ValidationException::withMessages([
+                'beneficiary_target_id' => 'Target penerima tidak tersedia atau tidak terhubung dengan kampanye ini.',
+            ]);
+        }
+    }
+
+    $donation = DB::transaction(function () use ($data, $campaign, $request) {
 
         // Buat kode donasi unik.
         $donationCode = 'SB-' . now()->format('Ymd') . '-' .
@@ -49,6 +63,7 @@ public function store(Request $request)
             'is_anonymous' => $data['is_anonymous'],
             'message' => $data['message'] ?? null,
             'payment_status' => 'pending',
+            'user_id' => $request->user()?->id,
         ]);
 
         // Buat catatan transaksi gateway.

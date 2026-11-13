@@ -54,8 +54,11 @@ class CampaignManagementController extends Controller
             'filters' => $request->only('search', 'status'),
             'statuses' => [
                 'draft' => 'Draft',
-                'active' => 'Aktif',
+                'pending_approval' => 'Menunggu Persetujuan',
                 'published' => 'Published',
+                'rejected' => 'Ditolak',
+                'inactive' => 'Nonaktif',
+                'active' => 'Aktif',
             ],
         ]);
     }
@@ -115,6 +118,9 @@ class CampaignManagementController extends Controller
 
             $data['slug'] = $this->makeUniqueSlug($data['title']);
 
+            // Program baru harus melalui alur persetujuan.
+            $data['status'] = 'draft';
+
             $campaign = Campaign::create($data);
             $campaign->beneficiaryTargets()->sync($targetIds);
         });
@@ -130,6 +136,12 @@ class CampaignManagementController extends Controller
     public function edit(string $id)
     {
         $campaign = Campaign::with('beneficiaryTargets')->findOrFail($id);
+
+        abort_if(
+            $campaign->status === 'pending_approval',
+            403,
+            'Program yang sedang menunggu persetujuan tidak dapat diedit melalui formulir Superadmin.'
+        );
 
         return Inertia::render('Superadmin/Campaigns/Form', [
             'campaign' => $campaign,
@@ -213,10 +225,6 @@ class CampaignManagementController extends Controller
                 'string',
                 'max:255',
             ],
-            'status' => [
-                'required',
-                Rule::in(['draft', 'active', 'published']),
-            ],
             'beneficiary_targets' => [
                 'required',
                 'array',
@@ -292,4 +300,139 @@ class CampaignManagementController extends Controller
             ->setStatusCode(303)
             ->with('success', 'Program berhasil dihapus.');
     }
+
+    /**
+     * Menyetujui pengajuan program dan langsung mempublikasikannya.
+     */
+    public function approve(Request $request, string $id)
+    {
+        $campaign = Campaign::findOrFail($id);
+
+        abort_if(
+            $campaign->status !== 'pending_approval',
+            403,
+            'Hanya program yang menunggu persetujuan yang dapat disetujui.'
+        );
+
+        DB::transaction(function () use ($campaign, $request) {
+            $campaign->update([
+                'status' => 'published',
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+                'rejection_reason' => null,
+            ]);
+
+            $this->writeCampaignAudit(
+                $request,
+                'campaign_approved',
+                $campaign,
+                [
+                    'title' => $campaign->title,
+                    'status' => 'published',
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('superadmin.campaigns.show', $campaign->id)
+            ->with('success', 'Program berhasil disetujui dan dipublikasikan.');
+    }
+
+    /**
+     * Menolak pengajuan program dengan alasan wajib.
+     */
+    public function reject(Request $request, string $id)
+    {
+        $data = $request->validate([
+            'rejection_reason' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+
+        $campaign = Campaign::findOrFail($id);
+
+        abort_if(
+            $campaign->status !== 'pending_approval',
+            403,
+            'Hanya program yang menunggu persetujuan yang dapat ditolak.'
+        );
+
+        DB::transaction(function () use ($campaign, $request, $data) {
+            $campaign->update([
+                'status' => 'rejected',
+                'approved_by' => $request->user()->id,
+                'approved_at' => now(),
+                'rejection_reason' => $data['rejection_reason'],
+            ]);
+
+            $this->writeCampaignAudit(
+                $request,
+                'campaign_rejected',
+                $campaign,
+                [
+                    'title' => $campaign->title,
+                    'status' => 'rejected',
+                    'rejection_reason' => $data['rejection_reason'],
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('superadmin.campaigns.show', $campaign->id)
+            ->with('success', 'Pengajuan program ditolak. Alasan penolakan telah disimpan.');
+    }
+
+    /**
+     * Menonaktifkan program yang sudah dipublikasikan.
+     */
+    public function deactivate(Request $request, string $id)
+    {
+        $campaign = Campaign::findOrFail($id);
+
+        abort_if(
+            $campaign->status !== 'published',
+            403,
+            'Hanya program Published yang dapat dinonaktifkan.'
+        );
+
+        DB::transaction(function () use ($campaign, $request) {
+            $campaign->update([
+                'status' => 'inactive',
+            ]);
+
+            $this->writeCampaignAudit(
+                $request,
+                'campaign_deactivated',
+                $campaign,
+                [
+                    'title' => $campaign->title,
+                    'status' => 'inactive',
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('superadmin.campaigns.show', $campaign->id)
+            ->with('success', 'Program berhasil dinonaktifkan.');
+    }
+
+    /**
+     * Mencatat keputusan program ke Audit Log.
+     */
+    private function writeCampaignAudit(
+        Request $request,
+        string $action,
+        Campaign $campaign,
+        array $metadata
+    ): void {
+        DB::table('audit_logs')->insert([
+            'user_id' => $request->user()->id,
+            'action' => $action,
+            'entity_type' => 'campaign',
+            'entity_id' => $campaign->id,
+            'metadata' => json_encode($metadata),
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
 }
