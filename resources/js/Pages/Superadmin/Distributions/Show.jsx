@@ -77,7 +77,7 @@ export default function Show({
         errors: documentErrors,
         reset: resetDocument,
     } = useForm({
-        photo: null,
+        media: null,
         caption: '',
         document_date: '',
     });
@@ -181,6 +181,18 @@ export default function Show({
             icon: Wallet,
         },
     ];
+    const photoCount = documents.filter(
+        (document) => document.file_type !== 'video'
+    ).length;
+    
+    const videoCount = documents.filter(
+        (document) => document.file_type === 'video'
+    ).length;
+    
+    const documentationSummary = [
+        photoCount > 0 ? `${photoCount} foto` : null,
+        videoCount > 0 ? `${videoCount} video` : null,
+    ].filter(Boolean).join(' dan ');
 
     return (
         <SuperadminLayout
@@ -350,7 +362,7 @@ export default function Show({
                     </p>
 
                     <p>
-                        Dokumentasi tersedia: {documents.length} foto
+                        Dokumentasi tersedia: {documentationSummary || 'Belum ada dokumentasi'}
                     </p>
 
                     <button
@@ -689,37 +701,39 @@ export default function Show({
     </h3>
 
     <p style={{ color: '#82958c', marginTop: 0 }}>
-        Unggah foto sebagai bukti pelaksanaan kegiatan penyaluran.
+        Unggah foto atau video sebagai bukti pelaksanaan kegiatan penyaluran.
     </p>
 
     <form onSubmit={submitDocument}>
         <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
-                Foto Kegiatan *
+                Foto atau Video Kegiatan *
             </label>
 
             <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm"
                 onChange={(e) =>
-                    setDocumentData('photo', e.target.files[0] || null)
+                    setDocumentData('media', e.target.files[0] || null)
                 }
                 required
             />
 
-            {documentErrors.photo && (
+            {documentErrors.media && (
                 <p style={{ color: '#dc2626', fontSize: 13 }}>
-                    {documentErrors.photo}
+                    {documentErrors.media}
                 </p>
             )}
+
             <p style={{ color: '#82958c', fontSize: 12 }}>
-                Format JPG, PNG, atau WEBP. Maksimal 5 MB.
+                Foto: JPG, PNG, WEBP maksimal 5 MB.
+                Video: MP4, MOV, WEBM maksimal 50 MB.
             </p>
         </div>
 
         <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
-                Keterangan Foto
+                Keterangan Dokumentasi
             </label>
 
             <input
@@ -803,22 +817,39 @@ export default function Show({
                         overflow: 'hidden',
                     }}
                 >
-                    <a
-                        href={`/storage/${document.file_path}`}
-                        target="_blank"
-                        rel="noreferrer"
-                    >
-                        <img
+                    {document.file_type === 'video' ? (
+                        <video
                             src={`/storage/${document.file_path}`}
-                            alt={document.caption || 'Dokumentasi penyaluran'}
+                            controls
+                            preload="metadata"
                             style={{
                                 width: '100%',
                                 height: 180,
                                 objectFit: 'cover',
                                 display: 'block',
+                                background: '#000',
                             }}
-                        />
-                    </a>
+                        >
+                            Browser tidak mendukung pemutar video.
+                        </video>
+                    ) : (
+                        <a
+                            href={`/storage/${document.file_path}`}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            <img
+                                src={`/storage/${document.file_path}`}
+                                alt={document.caption || 'Dokumentasi penyaluran'}
+                                style={{
+                                    width: '100%',
+                                    height: 180,
+                                    objectFit: 'cover',
+                                    display: 'block',
+                                }}
+                            />
+                        </a>
+                    )}
 
                     <div style={{ padding: 12 }}>
                         <strong style={{ fontSize: 14 }}>
@@ -872,7 +903,7 @@ export default function Show({
                 textAlign: 'center',
                 padding: 20,
             }}>
-                Belum ada dokumentasi foto untuk kegiatan ini.
+                Belum ada dokumentasi foto atau video untuk kegiatan ini.
             </p>
         )}
     </div>

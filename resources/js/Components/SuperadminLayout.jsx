@@ -3,7 +3,8 @@ import { Head, router } from '@inertiajs/react';
 import {
     LayoutDashboard, Users, Megaphone, Wallet,
     Receipt, HandHeart, ClipboardList, ChartNoAxesCombined,
-    History, Settings, LogOut, Menu, X, Bell, ShieldCheck
+    History, Settings, LogOut, Menu, X, Bell, ShieldCheck,
+    ArrowLeftRight
 } from 'lucide-react';
 import '../../css/superadmin.css';
 
@@ -13,6 +14,7 @@ const menus = [
     { id: 'programs', label: 'Manajemen Program', icon: Megaphone, url: '/superadmin/program' },
     { id: 'finance', label: 'Manajemen Keuangan', icon: Wallet, url: '/superadmin/keuangan' },
     { id: 'transactions', label: 'Manajemen Transaksi', icon: Receipt, url: '/superadmin/transaksi' },
+    { id: 'reconciliation', label: 'Rekonsiliasi Transaksi', icon: ArrowLeftRight, url: '/superadmin/rekonsiliasi' },
     { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart, url: '/superadmin/penyaluran' },
     { id: 'expenses', label: 'Pengeluaran & Persetujuan', icon: ClipboardList, url: '/superadmin/pengeluaran' },
     { id: 'reports', label: 'Laporan & Transparansi', icon: ChartNoAxesCombined, url: '/superadmin/laporan' },

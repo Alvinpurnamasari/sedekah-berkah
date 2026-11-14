@@ -330,10 +330,16 @@ public function saveRealization(Request $request, string $id)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Realisasi penyaluran berhasil disimpan.');
 }
+
 public function uploadDocument(Request $request, string $id)
 {
     $validated = $request->validate([
-        'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        'media' => [
+            'required',
+            'file',
+            'mimes:jpg,jpeg,png,webp,mp4,mov,webm',
+            'max:51200',
+        ],
         'caption' => ['nullable', 'string', 'max:255'],
         'document_date' => ['nullable', 'date'],
     ]);
@@ -344,21 +350,49 @@ public function uploadDocument(Request $request, string $id)
 
     abort_if(!$distribution, 404);
 
-    // Simpan foto ke storage/app/public/distribution-documents
-    $filePath = $request->file('photo')
-        ->store('distribution-documents', 'public');
+    $file = $request->file('media');
+    $mimeType = $file->getMimeType();
+
+    $fileType = str_starts_with($mimeType, 'video/')
+        ? 'video'
+        : 'photo';
+
+    // Foto maksimal 5 MB.
+    if (
+        $fileType === 'photo' &&
+        $file->getSize() > 5 * 1024 * 1024
+    ) {
+        return back()
+            ->withErrors([
+                'media' => 'Ukuran foto maksimal 5 MB.',
+            ])
+            ->withInput();
+    }
+
+    $filePath = $file->store(
+        'distribution-documents',
+        'public'
+    );
 
     try {
-        DB::transaction(function () use ($validated, $id, $filePath) {
-            $documentId = DB::table('distribution_documents')->insertGetId([
-                'distribution_id' => $id,
-                'file_path' => $filePath,
-                'caption' => $validated['caption'] ?? null,
-                'document_date' => $validated['document_date'] ?? null,
-                'uploaded_by' => auth()->id(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        DB::transaction(function () use (
+            $validated,
+            $id,
+            $filePath,
+            $fileType,
+            $request
+        ) {
+            $documentId = DB::table('distribution_documents')
+                ->insertGetId([
+                    'distribution_id' => $id,
+                    'file_path' => $filePath,
+                    'file_type' => $fileType,
+                    'caption' => $validated['caption'] ?? null,
+                    'document_date' => $validated['document_date'] ?? null,
+                    'uploaded_by' => auth()->id(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
 
             DB::table('audit_logs')->insert([
                 'user_id' => auth()->id(),
@@ -368,9 +402,11 @@ public function uploadDocument(Request $request, string $id)
                 'metadata' => json_encode([
                     'document_id' => $documentId,
                     'file_path' => $filePath,
+                    'file_type' => $fileType,
                     'caption' => $validated['caption'] ?? null,
+                    'actor' => 'superadmin',
                 ]),
-                'ip_address' => request()->ip(),
+                'ip_address' => $request->ip(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -384,6 +420,7 @@ public function uploadDocument(Request $request, string $id)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Dokumentasi kegiatan berhasil diunggah.');
 }
+
 public function deleteDocument(string $id, int $documentId)
 {
     $document = DB::table('distribution_documents')

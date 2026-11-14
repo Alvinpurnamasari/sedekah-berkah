@@ -400,6 +400,12 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::get('/transaksi/{id}', [TransactionController::class, 'show'])
         ->name('transactions.show');
 
+        // Rekonsiliasi transaksi
+Route::get('/rekonsiliasi', [
+    \App\Http\Controllers\Superadmin\ReconciliationController::class,
+    'index'
+])->name('reconciliation.index');
+
     Route::get('/penyaluran', [DistributionController::class, 'index'])
         ->name('distributions.index');
 
