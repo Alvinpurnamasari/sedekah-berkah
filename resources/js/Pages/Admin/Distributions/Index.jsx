@@ -88,6 +88,12 @@ export default function Index({ distributions, filters = {} }) {
                                 mengisi laporan realisasi.
                             </p>
                         </div>
+                        <Link
+                            href="/admin/penyaluran/tambah"
+                            className="ad-primary-button"
+                        >
+                            + Tambah Rencana Penyaluran
+                        </Link>
                     </div>
 
                     <div className="ad-panel">

@@ -46,6 +46,162 @@ class DistributionController extends Controller
         ]);
     }
 
+
+    /**
+     * Form pembuatan rencana penyaluran oleh Admin.
+     */
+    public function create()
+    {
+        $campaigns = DB::table('campaigns')
+            ->whereIn('status', ['published', 'active'])
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return Inertia::render('Admin/Distributions/Create', [
+            'campaigns' => $campaigns,
+        ]);
+    }
+
+    /**
+     * Menyimpan rencana penyaluran dan anggaran yang diajukan.
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'campaign_id' => ['required', 'exists:campaigns,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'distribution_date' => ['required', 'date'],
+            'location' => ['required', 'string', 'max:255'],
+            'planned_quantity' => ['required', 'integer', 'min:1'],
+            'requested_budget' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $campaignIsAvailable = DB::table('campaigns')
+            ->where('id', $validated['campaign_id'])
+            ->whereIn('status', ['published', 'active'])
+            ->exists();
+
+        abort_unless(
+            $campaignIsAvailable,
+            422,
+            'Program tidak tersedia untuk pengajuan penyaluran.'
+        );
+
+        DB::transaction(function () use ($validated, $request) {
+            $id = (string) \Illuminate\Support\Str::uuid();
+
+            DB::table('distributions')->insert([
+                'id' => $id,
+                'campaign_id' => $validated['campaign_id'],
+                'title' => $validated['title'],
+                'distribution_date' => $validated['distribution_date'],
+                'location' => $validated['location'],
+                'planned_quantity' => $validated['planned_quantity'],
+                'requested_budget' => $validated['requested_budget'],
+                'approved_budget' => null,
+                'budget_status' => 'draft',
+                'actual_quantity' => 0,
+                'total_cost' => 0,
+                'is_simulated' => false,
+                'status' => 'planned',
+                'report_status' => 'draft',
+                'created_by' => auth()->id(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => 'distribution_created_by_admin',
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'title' => $validated['title'],
+                    'campaign_id' => $validated['campaign_id'],
+                    'requested_budget' => $validated['requested_budget'],
+                ]),
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.distributions.index')
+            ->with('success', 'Rencana penyaluran berhasil disimpan sebagai draft.');
+    }
+
+    /**
+     * Mengajukan anggaran penyaluran kepada Superadmin.
+     */
+    public function submitBudget(Request $request, string $id)
+    {
+        DB::transaction(function () use ($id, $request) {
+            $distribution = DB::table('distributions')
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if(!$distribution, 404);
+
+            abort_if(
+                $distribution->created_by !== auth()->id(),
+                403,
+                'Anda hanya dapat mengajukan anggaran rencana yang Anda buat.'
+            );
+
+            abort_if(
+                !in_array($distribution->budget_status, ['draft', 'revision', 'rejected']),
+                403,
+                'Pengajuan anggaran ini tidak dapat dikirim dalam status sekarang.'
+            );
+
+            abort_if(
+                $distribution->requested_budget < 1,
+                422,
+                'Anggaran yang diajukan harus lebih dari nol.'
+            );
+
+            abort_if(
+                $distribution->status !== 'planned' ||
+                $distribution->report_status !== 'draft',
+                403,
+                'Rencana tidak dapat diajukan karena pelaksanaan atau pelaporan sudah dimulai.'
+            );
+
+            DB::table('distributions')
+                ->where('id', $id)
+                ->update([
+                    'budget_status' => 'pending',
+                    'approved_budget' => null,
+                    'budget_reviewed_by' => null,
+                    'budget_reviewed_at' => null,
+                    'budget_revision_note' => null,
+                    'updated_at' => now(),
+                ]);
+
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => 'distribution_budget_submitted',
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'title' => $distribution->title,
+                    'requested_budget' => $distribution->requested_budget,
+                    'previous_status' => $distribution->budget_status,
+                    'new_status' => 'pending',
+                ]),
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()
+            ->route('admin.distributions.show', $id)
+            ->with('success', 'Pengajuan anggaran berhasil dikirim kepada Superadmin.');
+    }
+
     /**
      * Detail kegiatan penyaluran.
      */
@@ -118,13 +274,19 @@ class DistributionController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            abort_if(!$distribution, 404);
+                abort_if(!$distribution, 404);
 
-            abort_if(
-                !in_array($distribution->status, ['planned', 'ongoing']) ||
-                !in_array($distribution->report_status, ['draft', 'revision']),
-                403,
-                'Realisasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
+                abort_if(
+                    $distribution->budget_status !== 'approved',
+                    403,
+                    'Realisasi belum dapat dilakukan karena anggaran belum disetujui Superadmin.'
+                );
+                
+                abort_if(
+                    !in_array($distribution->status, ['planned', 'ongoing']) ||
+                    !in_array($distribution->report_status, ['draft', 'revision']),
+                    403,
+                    'Realisasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
             );
 
             $before = [

@@ -34,7 +34,13 @@ const reportLabels = {
     approved: 'Disetujui',
     revision: 'Perlu perbaikan',
 };
-
+const budgetLabels = {
+    draft: 'Draft',
+    pending: 'Menunggu persetujuan',
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+    revision: 'Perlu revisi',
+};
 const expenseLabels = {
     pending: 'Menunggu persetujuan',
     approved: 'Disetujui',
@@ -117,6 +123,63 @@ export default function Show({
                 onSuccess: () => resetRevision(),
             }
         );
+    };
+
+    const {
+        data: budgetApprovalData,
+        setData: setBudgetApprovalData,
+        post: postBudgetApproval,
+        processing: approvingBudget,
+        errors: budgetApprovalErrors,
+    } = useForm({
+        approved_budget: distribution.approved_budget || distribution.requested_budget || '',
+    });
+    
+    const {
+        data: budgetReviewData,
+        setData: setBudgetReviewData,
+        post: postBudgetReview,
+        processing: reviewingBudget,
+        errors: budgetReviewErrors,
+        reset: resetBudgetReview,
+    } = useForm({
+        revision_note: '',
+    });
+    
+    const budgetStatus = distribution.budget_status || 'draft';
+    
+    const submitBudgetApproval = (event) => {
+        event.preventDefault();
+    
+        if (!window.confirm('Setujui anggaran kegiatan ini?')) {
+            return;
+        }
+    
+        postBudgetApproval(
+            `/superadmin/penyaluran/${distribution.id}/setujui-anggaran`
+        );
+    };
+    
+    const submitBudgetReview = (event, action) => {
+        event.preventDefault();
+    
+        const isReject = action === 'reject';
+    
+        const message = isReject
+            ? 'Tolak pengajuan anggaran ini?'
+            : 'Kembalikan pengajuan anggaran kepada Admin untuk direvisi?';
+    
+        if (!window.confirm(message)) {
+            return;
+        }
+    
+        const url = isReject
+            ? `/superadmin/penyaluran/${distribution.id}/tolak-anggaran`
+            : `/superadmin/penyaluran/${distribution.id}/minta-revisi-anggaran`;
+    
+        postBudgetReview(url, {
+            onSuccess: () => resetBudgetReview(),
+        });
     };
 
     const approveReport = () => {
@@ -345,6 +408,212 @@ export default function Show({
             
 
             </div>
+
+            <div style={{
+                background: 'white',
+                border: '1px solid #e5eee9',
+                borderRadius: 14,
+                padding: 24,
+                marginBottom: 20,
+            }}>
+                <h3 style={{ marginTop: 0 }}>
+                    Pemeriksaan Persetujuan Anggaran
+                </h3>
+
+                <p style={{ color: '#82958c' }}>
+                    Periksa nominal anggaran yang diajukan Admin sebelum memberikan persetujuan.
+                </p>
+
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: 16,
+                    marginBottom: 20,
+                }}>
+                    <div style={{ background: '#f3f8f5', padding: 16, borderRadius: 10 }}>
+                        <span>Anggaran diajukan</span>
+                        <h3>{rupiah(distribution.requested_budget)}</h3>
+                    </div>
+
+                    <div style={{ background: '#f3f8f5', padding: 16, borderRadius: 10 }}>
+                        <span>Anggaran disetujui</span>
+                        <h3>
+                            {distribution.approved_budget
+                                ? rupiah(distribution.approved_budget)
+                                : 'Belum disetujui'}
+                        </h3>
+                    </div>
+
+                    <div style={{ background: '#f3f8f5', padding: 16, borderRadius: 10 }}>
+                        <span>Status anggaran</span>
+                        <h3>
+                            {budgetLabels[budgetStatus] || budgetStatus}
+                        </h3>
+                    </div>
+                </div>
+
+                {distribution.budget_revision_note && (
+                    <div style={{
+                        background: '#fff7ed',
+                        padding: 16,
+                        borderRadius: 10,
+                        marginBottom: 20,
+                    }}>
+                        <strong>Catatan pemeriksaan sebelumnya</strong>
+                        <p style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+                            {distribution.budget_revision_note}
+                        </p>
+                    </div>
+                )}
+
+                {budgetStatus === 'pending' && !isSimulated && (
+                    <>
+                        <form onSubmit={submitBudgetApproval}>
+                            <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
+                                Nominal anggaran yang disetujui (Rp)
+                            </label>
+
+                            <input
+                                type="number"
+                                min="1"
+                                max={distribution.requested_budget}
+                                required
+                                value={budgetApprovalData.approved_budget}
+                                onChange={(e) =>
+                                    setBudgetApprovalData('approved_budget', e.target.value)
+                                }
+                                style={{
+                                    width: '100%',
+                                    padding: 12,
+                                    border: '1px solid #dce7e1',
+                                    borderRadius: 8,
+                                    boxSizing: 'border-box',
+                                }}
+                            />
+
+                            {budgetApprovalErrors.approved_budget && (
+                                <p style={{ color: '#dc2626' }}>
+                                    {budgetApprovalErrors.approved_budget}
+                                </p>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={approvingBudget}
+                                style={{
+                                    marginTop: 14,
+                                    padding: '12px 20px',
+                                    background: '#16734f',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                {approvingBudget ? 'Menyimpan...' : 'Setujui Anggaran'}
+                            </button>
+                        </form>
+
+                        <hr style={{
+                            border: 0,
+                            borderTop: '1px solid #e5eee9',
+                            margin: '24px 0',
+                        }} />
+
+                        <form onSubmit={(event) => submitBudgetReview(event, 'revision')}>
+                            <label style={{ display: 'block', fontWeight: 600, marginBottom: 8 }}>
+                                Catatan penolakan atau revisi
+                            </label>
+
+                            <textarea
+                                rows={4}
+                                minLength={5}
+                                maxLength={2000}
+                                required
+                                value={budgetReviewData.revision_note}
+                                onChange={(e) =>
+                                    setBudgetReviewData('revision_note', e.target.value)
+                                }
+                                placeholder="Tuliskan alasan atau bagian anggaran yang perlu diperbaiki..."
+                                style={{
+                                    width: '100%',
+                                    padding: 12,
+                                    border: '1px solid #dce7e1',
+                                    borderRadius: 8,
+                                    boxSizing: 'border-box',
+                                }}
+                            />
+
+                            {budgetReviewErrors.revision_note && (
+                                <p style={{ color: '#dc2626' }}>
+                                    {budgetReviewErrors.revision_note}
+                                </p>
+                            )}
+
+                            <div style={{
+                                display: 'flex',
+                                gap: 10,
+                                flexWrap: 'wrap',
+                                marginTop: 12,
+                            }}>
+                                <button
+                                    type="submit"
+                                    disabled={reviewingBudget}
+                                    style={{
+                                        padding: '11px 18px',
+                                        background: '#b45309',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 8,
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Minta Revisi
+                                </button>
+
+                                <button
+                                    type="button"
+                                    disabled={reviewingBudget}
+                                    onClick={(event) => submitBudgetReview(event, 'reject')}
+                                    style={{
+                                        padding: '11px 18px',
+                                        background: '#b91c1c',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 8,
+                                        fontWeight: 600,
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    Tolak Pengajuan
+                                </button>
+                            </div>
+                        </form>
+                    </>
+                )}
+
+                {budgetStatus === 'pending' && isSimulated && (
+                    <p style={{ color: '#b45309' }}>
+                        Pengajuan anggaran data simulasi tidak dapat diproses.
+                    </p>
+                )}
+
+                {budgetStatus === 'approved' && (
+                    <p style={{ color: '#16734f', fontWeight: 600 }}>
+                        Anggaran telah disetujui. Nominal yang disetujui:
+                        {' '}{rupiah(distribution.approved_budget)}
+                    </p>
+                )}
+
+                {budgetStatus !== 'pending' && budgetStatus !== 'approved' && (
+                    <p style={{ color: '#82958c' }}>
+                        Belum ada pengajuan anggaran yang menunggu pemeriksaan.
+                    </p>
+                )}
+            </div>
+
             {distribution.report_status === 'pending' && (
                 <div style={{
                     background: 'white',

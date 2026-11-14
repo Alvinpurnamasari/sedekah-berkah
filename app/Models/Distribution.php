@@ -28,6 +28,12 @@ class Distribution extends Model
         'is_published',
         'published_at',
         'is_simulated',
+        'requested_budget',
+        'approved_budget',
+        'budget_status',
+        'budget_reviewed_by',
+        'budget_reviewed_at',
+        'budget_revision_note',
     ];
 
     protected $casts = [
@@ -39,6 +45,9 @@ class Distribution extends Model
         'actual_quantity' => 'integer',
         'total_cost' => 'integer',
         'is_simulated' => 'boolean',
+        'requested_budget' => 'integer',
+        'approved_budget' => 'integer',
+        'budget_reviewed_at' => 'datetime',
     ];
 
     public function campaign(): BelongsTo

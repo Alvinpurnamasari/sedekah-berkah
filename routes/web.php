@@ -247,6 +247,14 @@ Route::middleware('role:admin')
             Route::get('/', [AdminDistributionController::class, 'index'])
                 ->name('index');
 
+            Route::get('/tambah', [AdminDistributionController::class, 'create'])
+                ->name('create');
+            
+            Route::post('/', [AdminDistributionController::class, 'store'])
+                ->name('store');
+            
+            Route::post('/{id}/ajukan-anggaran', [AdminDistributionController::class, 'submitBudget'])
+                ->name('submit-budget');
             Route::get('/{id}', [AdminDistributionController::class, 'show'])
                 ->name('show');
 
@@ -261,6 +269,7 @@ Route::middleware('role:admin')
 
             Route::post('/{id}/ajukan-laporan', [AdminDistributionController::class, 'submitReport'])
                 ->name('submit-report');
+
         });
 
         // Dokumentasi kegiatan Admin
@@ -418,6 +427,21 @@ Route::get('/rekonsiliasi', [
     Route::get('/penyaluran/{id}', [DistributionController::class, 'show'])
         ->name('distributions.show');
 
+    Route::post('/penyaluran/{id}/setujui-anggaran', [
+        DistributionController::class,
+        'approveBudget'
+    ])->name('distributions.approve-budget');
+    
+    Route::post('/penyaluran/{id}/tolak-anggaran', [
+        DistributionController::class,
+        'rejectBudget'
+    ])->name('distributions.reject-budget');
+    
+    Route::post('/penyaluran/{id}/minta-revisi-anggaran', [
+        DistributionController::class,
+        'requestBudgetRevision'
+    ])->name('distributions.request-budget-revision');
+        
     Route::get('/penyaluran/{id}/edit', [DistributionController::class, 'edit'])
         ->name('distributions.edit');
 

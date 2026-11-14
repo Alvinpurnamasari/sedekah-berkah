@@ -167,6 +167,46 @@ export default function Index({ expenses }) {
                                         </td>
                                         <td>
                                             {item.distribution?.title || '-'}
+
+                                            {item.expense_type === 'distribution_detail' && item.distribution && (
+                                                <div className="se-budget-info">
+                                                {item.distribution.is_simulated ? (
+                                                    <strong>Data simulasi — bukan saldo nyata</strong>
+                                                ) : (
+                                                    <>
+                                                        <small>
+                                                            Status anggaran: {
+                                                                item.distribution.budget_status === 'approved'
+                                                                    ? 'Disetujui'
+                                                                    : 'Belum disetujui'
+                                                            }
+                                                        </small>
+                                            
+                                                        <small>
+                                                            Anggaran disetujui: {rupiah(item.distribution.approved_budget)}
+                                                        </small>
+                                            
+                                                        <small>
+                                                            Pengeluaran disetujui: {rupiah(item.distribution.approved_expenses_total)}
+                                                        </small>
+                                            
+                                                        <small>
+                                                            Pengajuan menunggu: {rupiah(item.distribution.pending_expenses_total)}
+                                                        </small>
+                                            
+                                                        <small>
+                                                            Sisa anggaran: {
+                                                                rupiah(
+                                                                    Number(item.distribution.approved_budget || 0)
+                                                                    - Number(item.distribution.approved_expenses_total || 0)
+                                                                    - Number(item.distribution.pending_expenses_total || 0)
+                                                                )
+                                                            }
+                                                        </small>
+                                                    </>
+                                                )}
+                                            </div>
+                                            )}
                                         </td>
                                         <td>
                                             {item.submitter?.name || '-'}
@@ -259,9 +299,10 @@ export default function Index({ expenses }) {
 
                 <div className="se-note">
                     <Clock size={18} />
-                    Hanya pengeluaran nyata berstatus Disetujui yang mengurangi
-                    saldo tersedia. Data simulasi tidak memengaruhi saldo nyata.
-                    Pengajuan Menunggu dan Ditolak juga tidak mengurangi saldo.
+                    Pengajuan penyaluran berstatus Menunggu dan Disetujui
+                    diperhitungkan dalam penggunaan anggaran agar tidak terjadi
+                    pengajuan melebihi pagu. Pengajuan Ditolak tidak diperhitungkan.
+                    Data simulasi tidak memengaruhi saldo nyata.
                 </div>
             </div>
         </SuperadminLayout>

@@ -43,6 +43,15 @@ const reportLabels = {
     revision: 'Perlu revisi',
 };
 
+const budgetLabels = {
+    draft: 'Draft',
+    pending: 'Menunggu persetujuan Superadmin',
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+    revision: 'Perlu revisi',
+};
+
+
 export default function Show({
     distribution,
     expenses = [],
@@ -65,9 +74,18 @@ export default function Show({
         document_date: new Date().toISOString().slice(0, 10),
     });
 
-    const canEdit = ['draft', 'revision'].includes(
-        distribution.report_status
-    );
+   
+    const budgetStatus = distribution.budget_status || 'draft';
+
+    const budgetLabel =
+        budgetLabels[budgetStatus] || budgetStatus;
+
+    const budgetApproved = budgetStatus === 'approved';
+
+    const canEdit =
+        budgetApproved &&
+        ['draft', 'revision'].includes(distribution.report_status);
+
 
     const canSubmit =
         distribution.status === 'completed' &&
@@ -110,6 +128,21 @@ export default function Show({
 
         router.delete(
             `/admin/penyaluran/${distribution.id}/dokumentasi/${documentId}`,
+            { preserveScroll: true }
+        );
+    }
+
+
+    function submitBudget() {
+        if (!window.confirm(
+            'Ajukan anggaran kegiatan ini kepada Superadmin untuk diperiksa?'
+        )) {
+            return;
+        }
+
+        router.post(
+            `/admin/penyaluran/${distribution.id}/ajukan-anggaran`,
+            {},
             { preserveScroll: true }
         );
     }
@@ -209,6 +242,73 @@ export default function Show({
                         <strong>{reportLabel}</strong>
                     </div>
                 </section>
+
+                <section className="ad-panel ad-dist-section">
+                    <div className="ad-dist-heading">
+                        <div>
+                            <h3>Persetujuan Anggaran</h3>
+                            <p>
+                                Informasi pengajuan dan persetujuan anggaran kegiatan.
+                            </p>
+                        </div>
+                        <Wallet size={25} />
+                    </div>
+
+                    <div className="ad-dist-expense-summary">
+                        <div>
+                            <span>Anggaran diajukan</span>
+                            <strong>{rupiah(distribution.requested_budget)}</strong>
+                        </div>
+
+                        <div>
+                            <span>Anggaran disetujui</span>
+                            <strong>
+                                {distribution.approved_budget !== null
+                                    ? rupiah(distribution.approved_budget)
+                                    : 'Belum disetujui'}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Status anggaran</span>
+                            <strong>{budgetLabel}</strong>
+                        </div>
+                    </div>
+
+                    {distribution.budget_revision_note && (
+                        <div className="ad-dist-hint">
+                            <AlertCircle size={18} />
+                            Catatan Superadmin: {distribution.budget_revision_note}
+                        </div>
+                    )}
+
+                    {['draft', 'revision', 'rejected'].includes(budgetStatus) && (
+                        <button
+                            type="button"
+                            className="ad-dist-primary-button"
+                            onClick={submitBudget}
+                        >
+                            <Send size={18} />
+                            Ajukan Anggaran kepada Superadmin
+                        </button>
+                    )}
+
+                    {budgetStatus === 'pending' && (
+                        <div className="ad-dist-locked">
+                            <Clock3 size={20} />
+                            Anggaran sedang menunggu pemeriksaan Superadmin.
+                        </div>
+                    )}
+
+                    {budgetStatus === 'approved' && (
+                        <div className="ad-dist-approved">
+                            <CheckCircle2 size={20} />
+                            Anggaran telah disetujui Superadmin.
+                        </div>
+                    )}
+
+                </section>
+
 
                 {distribution.report_status === 'revision' &&
                     distribution.report_revision_note && (

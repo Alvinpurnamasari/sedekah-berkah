@@ -182,6 +182,175 @@ public function show(string $id)
 }
 
 
+    /**
+     * Menyetujui pengajuan anggaran penyaluran.
+     */
+    public function approveBudget(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'approved_budget' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::transaction(function () use ($validated, $id, $request) {
+            $distribution = DB::table('distributions')
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if(!$distribution, 404);
+
+            abort_if(
+                (bool) $distribution->is_simulated,
+                403,
+                'Data simulasi tidak dapat disetujui.'
+            );
+
+            abort_if(
+                $distribution->budget_status !== 'pending',
+                403,
+                'Pengajuan anggaran tidak sedang menunggu pemeriksaan.'
+            );
+
+            abort_if(
+                (int) $validated['approved_budget'] >
+                (int) $distribution->requested_budget,
+                422,
+                'Anggaran yang disetujui tidak boleh melebihi anggaran yang diajukan.'
+            );
+
+            DB::table('distributions')
+                ->where('id', $id)
+                ->update([
+                    'budget_status' => 'approved',
+                    'approved_budget' => $validated['approved_budget'],
+                    'budget_reviewed_by' => auth()->id(),
+                    'budget_reviewed_at' => now(),
+                    'budget_revision_note' => null,
+                    'updated_at' => now(),
+                ]);
+
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => 'distribution_budget_approved',
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'requested_budget' => $distribution->requested_budget,
+                    'approved_budget' => $validated['approved_budget'],
+                    'previous_status' => 'pending',
+                    'new_status' => 'approved',
+                ]),
+                'ip_address' => $request->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()
+            ->route('superadmin.distributions.show', $id)
+            ->with('success', 'Anggaran penyaluran berhasil disetujui.');
+    }
+
+    /**
+     * Menolak pengajuan anggaran penyaluran.
+     */
+    public function rejectBudget(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'revision_note' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+
+        return $this->reviewBudget(
+            $id,
+            'rejected',
+            $validated['revision_note'],
+            'distribution_budget_rejected',
+            'Pengajuan anggaran berhasil ditolak.'
+        );
+    }
+
+    /**
+     * Meminta Admin merevisi pengajuan anggaran.
+     */
+    public function requestBudgetRevision(Request $request, string $id)
+    {
+        $validated = $request->validate([
+            'revision_note' => ['required', 'string', 'min:5', 'max:2000'],
+        ]);
+
+        return $this->reviewBudget(
+            $id,
+            'revision',
+            $validated['revision_note'],
+            'distribution_budget_revision_requested',
+            'Pengajuan anggaran dikembalikan kepada Admin untuk direvisi.'
+        );
+    }
+
+    /**
+     * Menyimpan hasil penolakan atau permintaan revisi.
+     */
+    private function reviewBudget(
+        string $id,
+        string $newStatus,
+        string $note,
+        string $action,
+        string $message
+    ) {
+        DB::transaction(function () use ($id, $newStatus, $note, $action) {
+            $distribution = DB::table('distributions')
+                ->where('id', $id)
+                ->lockForUpdate()
+                ->first();
+
+            abort_if(!$distribution, 404);
+
+            abort_if(
+                (bool) $distribution->is_simulated,
+                403,
+                'Data simulasi tidak dapat diperiksa.'
+            );
+
+            abort_if(
+                $distribution->budget_status !== 'pending',
+                403,
+                'Pengajuan anggaran tidak sedang menunggu pemeriksaan.'
+            );
+
+            DB::table('distributions')
+                ->where('id', $id)
+                ->update([
+                    'budget_status' => $newStatus,
+                    'approved_budget' => null,
+                    'budget_reviewed_by' => auth()->id(),
+                    'budget_reviewed_at' => now(),
+                    'budget_revision_note' => $note,
+                    'updated_at' => now(),
+                ]);
+
+            DB::table('audit_logs')->insert([
+                'user_id' => auth()->id(),
+                'action' => $action,
+                'entity_type' => 'distribution',
+                'entity_id' => $id,
+                'metadata' => json_encode([
+                    'title' => $distribution->title,
+                    'requested_budget' => $distribution->requested_budget,
+                    'previous_status' => 'pending',
+                    'new_status' => $newStatus,
+                    'note' => $note,
+                ]),
+                'ip_address' => request()->ip(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+
+        return redirect()
+            ->route('superadmin.distributions.show', $id)
+            ->with('success', $message);
+    }
+
 
 public function edit(string $id)
 {
@@ -288,12 +457,18 @@ public function saveRealization(Request $request, string $id)
             ->lockForUpdate()
             ->first();
 
-        abort_if(!$distribution, 404);
+            abort_if(!$distribution, 404);
 
-        abort_if(
-            !in_array($distribution->status, ['planned', 'ongoing']),
-            403,
-            'Realisasi tidak dapat diubah untuk kegiatan ini.'
+            abort_if(
+                $distribution->budget_status !== 'approved',
+                403,
+                'Realisasi belum dapat dilakukan karena anggaran belum disetujui.'
+            );
+            
+            abort_if(
+                !in_array($distribution->status, ['planned', 'ongoing']),
+                403,
+                'Realisasi tidak dapat diubah untuk kegiatan ini.'
         );
 
         $before = [
