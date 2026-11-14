@@ -1468,3 +1468,423 @@
         height: 220px;
     }
 }
+
+
+/* ========================================
+   ADMIN - LAPORAN KEGIATAN
+======================================== */
+
+.ad-report-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.ad-report-hero {
+    background: linear-gradient(120deg, #126047, #23845f);
+    color: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.ad-report-eyebrow {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #c6f5df;
+}
+
+.ad-report-hero h1 {
+    margin: 12px 0 8px;
+    font-size: 28px;
+    font-weight: 750;
+}
+
+.ad-report-hero p {
+    margin: 0;
+    color: #e0f4e9;
+    font-size: 14px;
+}
+
+.ad-report-hero-icon {
+    width: 78px;
+    height: 78px;
+    border-radius: 20px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
+}
+
+.ad-report-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.ad-report-summary article {
+    background: #fff;
+    border: 1px solid #e4ece7;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.ad-report-summary-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 13px;
+    background: #e9fbf3;
+    color: #07845c;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+
+.ad-report-summary article span {
+    display: block;
+    color: #718096;
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.ad-report-summary article strong {
+    color: #173c30;
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.ad-report-panel {
+    background: #fff;
+    border: 1px solid #e5ece8;
+    border-radius: 17px;
+    padding: 24px;
+}
+
+.ad-report-panel-heading,
+.ad-report-list-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    color: #07845c;
+    margin-bottom: 22px;
+}
+
+.ad-report-panel-heading h2,
+.ad-report-list-heading h2 {
+    color: #183d31;
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 6px;
+}
+
+.ad-report-panel-heading p,
+.ad-report-list-heading p {
+    color: #84938d;
+    font-size: 13px;
+    margin: 0;
+}
+
+.ad-report-filter-form {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.ad-report-field {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.ad-report-field label {
+    font-size: 13px;
+    font-weight: 650;
+    color: #24483b;
+}
+
+.ad-report-field input,
+.ad-report-field select {
+    width: 100%;
+    min-height: 49px;
+    border: 1px solid #dce9e1;
+    border-radius: 10px;
+    padding: 0 14px;
+    background: #fff;
+    color: #24483b;
+    font: inherit;
+    outline: none;
+}
+
+.ad-report-field input:focus,
+.ad-report-field select:focus {
+    border-color: #15966b;
+    box-shadow: 0 0 0 3px rgba(21, 150, 107, 0.1);
+}
+
+.ad-report-filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.ad-report-filter-actions button {
+    min-height: 47px;
+    border: 0;
+    border-radius: 10px;
+    padding: 0 15px;
+    background: #087e59;
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-weight: 650;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.ad-report-filter-actions .ad-report-reset {
+    background: #edf8f2;
+    color: #087e59;
+}
+
+.ad-report-list-heading {
+    margin-bottom: 18px;
+}
+
+.ad-report-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ad-report-card {
+    border: 1px solid #e4ece7;
+    border-radius: 14px;
+    padding: 20px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ad-report-card:hover {
+    border-color: #9bd8bc;
+    box-shadow: 0 5px 18px rgba(20, 90, 60, 0.06);
+}
+
+.ad-report-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.ad-report-campaign {
+    color: #07845c;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ad-report-card-top h3 {
+    color: #183d31;
+    font-size: 17px;
+    font-weight: 750;
+    margin: 7px 0 0;
+}
+
+.ad-report-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 11px;
+    border-radius: 30px;
+    font-size: 11px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.ad-report-status.draft {
+    color: #64748b;
+    background: #f1f5f9;
+}
+
+.ad-report-status.pending {
+    color: #a16207;
+    background: #fef9c3;
+}
+
+.ad-report-status.revision {
+    color: #c2410c;
+    background: #ffedd5;
+}
+
+.ad-report-status.approved {
+    color: #047857;
+    background: #d1fae5;
+}
+
+.ad-report-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 13px 22px;
+    margin-top: 18px;
+}
+
+.ad-report-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #718096;
+    font-size: 12px;
+}
+
+.ad-report-meta svg {
+    color: #07845c;
+}
+
+.ad-report-revision-note {
+    margin-top: 17px;
+    padding: 13px 15px;
+    border-radius: 10px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 13px;
+}
+
+.ad-report-revision-note p {
+    margin: 5px 0 0;
+}
+
+.ad-report-card-footer {
+    border-top: 1px solid #edf1ee;
+    margin-top: 17px;
+    padding-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.ad-report-card-footer > span {
+    color: #87948e;
+    font-size: 12px;
+}
+
+.ad-report-card-footer a {
+    text-decoration: none;
+    background: #eafaf2;
+    color: #07845c;
+    border-radius: 9px;
+    padding: 10px 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ad-report-empty {
+    padding: 45px 20px;
+    text-align: center;
+    color: #82928a;
+}
+
+.ad-report-empty svg {
+    color: #15966b;
+}
+
+.ad-report-empty h3 {
+    color: #24483b;
+    margin: 13px 0 7px;
+}
+
+.ad-report-empty p {
+    font-size: 13px;
+    margin: 0;
+}
+
+.ad-report-pagination {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 22px;
+}
+
+.ad-report-pagination button {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #dce9e1;
+    background: #fff;
+    color: #087e59;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.ad-report-pagination button.active {
+    background: #087e59;
+    color: #fff;
+    border-color: #087e59;
+}
+
+.ad-report-pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+    .ad-report-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ad-report-filter-form {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .ad-report-filter-actions {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 600px) {
+    .ad-report-hero {
+        padding: 23px;
+    }
+
+    .ad-report-hero h1 {
+        font-size: 23px;
+    }
+
+    .ad-report-hero-icon {
+        width: 55px;
+        height: 55px;
+    }
+
+    .ad-report-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .ad-report-filter-form {
+        grid-template-columns: 1fr;
+    }
+
+    .ad-report-filter-actions {
+        grid-column: auto;
+        flex-wrap: wrap;
+    }
+
+    .ad-report-card-top {
+        flex-direction: column;
+    }
+
+    .ad-report-card-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}

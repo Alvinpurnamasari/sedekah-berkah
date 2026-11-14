@@ -66,6 +66,7 @@ const adminMenus = [
         id: 'reports',
         label: 'Laporan Kegiatan',
         icon: FileText,
+        url: '/admin/laporan-kegiatan',
     },
 ];
 

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\BeneficiaryTargetController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Admin\DocumentationController;
 
+
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
 
@@ -264,11 +265,20 @@ Route::middleware('role:admin')
 
         // Dokumentasi kegiatan Admin
         Route::middleware('role:admin')
-        ->get('/admin/dokumentasi', [
-            DocumentationController::class,
-            'index'
-        ])
-        ->name('admin.documentation.index');
+            ->get('/admin/dokumentasi', [
+                DocumentationController::class,
+                'index'
+            ])
+            ->name('admin.documentation.index');
+
+        // Laporan kegiatan Admin
+        Route::middleware('role:admin')
+            ->get('/admin/laporan-kegiatan', [
+                \App\Http\Controllers\Admin\ReportController::class,
+                'index'
+            ])
+            ->name('admin.reports.index');
+            
 
     Route::get('/superadmin', function () {
 
