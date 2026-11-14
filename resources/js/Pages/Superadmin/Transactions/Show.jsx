@@ -55,6 +55,35 @@ export default function TransactionShow({
     const total =
         Number(transaction.donation_amount || 0) +
         Number(transaction.operational_support || 0);
+  
+        const gatewayAmount = payment?.gross_amount != null
+        ? Number(payment.gross_amount)
+        : null;
+
+    const amountMatches = gatewayAmount !== null
+        && total === gatewayAmount;
+
+    const statusMatches = payment?.status != null
+        && transaction.payment_status === payment.status;
+
+    let reconciliationStatus = 'incomplete';
+    let reconciliationNote = 'Data transaksi pembayaran belum tersedia.';
+
+    if (payment) {
+        if (amountMatches && statusMatches) {
+            reconciliationStatus = 'matched';
+            reconciliationNote = 'Nominal dan status pembayaran sesuai.';
+        } else {
+            reconciliationStatus = 'review';
+            reconciliationNote = 'Terdapat perbedaan nominal atau status pembayaran.';
+        }
+    }
+
+    const reconciliationLabels = {
+        matched: 'Cocok',
+        review: 'Perlu diperiksa',
+        incomplete: 'Belum lengkap',
+    };
 
     return (
         <SuperadminLayout activeMenu="transactions">
@@ -240,6 +269,80 @@ export default function TransactionShow({
                         </div>
                     </div>
                 </section>
+
+                <section className="st-panel" style={{ marginTop: 24 }}>
+                    <div className="st-panel-heading">
+                        <div>
+                            <h2>
+                                <CheckCircle
+                                    size={20}
+                                    style={{
+                                        marginRight: 8,
+                                        verticalAlign: 'middle',
+                                    }}
+                                />
+                                Hasil Rekonsiliasi
+                            </h2>
+                            <p>
+                                Perbandingan data donasi dengan transaksi pembayaran.
+                            </p>
+                        </div>
+
+                        <span
+                            className={`st-status ${
+                                reconciliationStatus === 'matched'
+                                    ? 'paid'
+                                    : reconciliationStatus === 'review'
+                                        ? 'failed'
+                                        : 'pending'
+                            }`}
+                        >
+                            {reconciliationLabels[reconciliationStatus]}
+                        </span>
+                    </div>
+
+                    <div className="st-detail-list">
+                        <div>
+                            <span>Total donasi dan dukungan</span>
+                            <strong>{rupiah(total)}</strong>
+                        </div>
+
+                        <div>
+                            <span>Nominal transaksi pembayaran</span>
+                            <strong>
+                                {gatewayAmount !== null
+                                    ? rupiah(gatewayAmount)
+                                    : 'Belum tersedia'}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Selisih nominal</span>
+                            <strong>
+                                {gatewayAmount !== null
+                                    ? rupiah(Math.abs(total - gatewayAmount))
+                                    : '-'}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Kesesuaian status</span>
+                            <strong>
+                                {payment
+                                    ? statusMatches
+                                        ? 'Sesuai'
+                                        : 'Berbeda'
+                                    : 'Belum tersedia'}
+                            </strong>
+                        </div>
+
+                        <div className="st-message">
+                            <span>Keterangan pemeriksaan</span>
+                            <strong>{reconciliationNote}</strong>
+                        </div>
+                    </div>
+                </section>
+
                 <section className="st-panel" style={{ marginTop: 24 }}>
                     <div className="st-panel-heading">
                         <div>
