@@ -63,6 +63,13 @@ export default function SettingsIndex({ settings = {}, flash = {} }) {
                     </div>
                 </div>
 
+                {flash?.success && (
+                    <div className="ss-success" role="status">
+                        <span>✓</span>
+                        {flash.success}
+                    </div>
+                )}
+
                 <form onSubmit={submit}>
                     <section className="ss-card">
                         <div className="ss-card-heading">
@@ -168,13 +175,6 @@ export default function SettingsIndex({ settings = {}, flash = {} }) {
                     </section>
 
                     <div className="ss-actions">
-                        {flash?.success && (
-                            <div className="ss-success" role="status">
-                                <span>✓</span>
-                                {flash.success}
-                            </div>
-                        )}
-
                         <button type="submit" disabled={processing}>
                             <Save size={17} />
                             {processing ? 'Menyimpan...' : 'Simpan Pengaturan'}
