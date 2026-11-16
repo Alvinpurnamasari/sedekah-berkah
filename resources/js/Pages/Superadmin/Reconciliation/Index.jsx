@@ -25,7 +25,17 @@ const statusLabels = {
     failed: 'Gagal',
     expired: 'Kedaluwarsa',
 };
-
+const providerStatusLabels = {
+    settlement: 'Settlement',
+    capture: 'Capture',
+    pending: 'Pending',
+    expire: 'Expire',
+    deny: 'Deny',
+    cancel: 'Cancel',
+    refund: 'Refund',
+    partial_refund: 'Partial Refund',
+    failure: 'Failure',
+};
 const resultLabels = {
     matched: 'Cocok',
     review: 'Perlu diperiksa',
@@ -206,7 +216,8 @@ export default function ReconciliationIndex({
                                     <th>Total Donasi</th>
                                     <th>Nominal Transaksi</th>
                                     <th>Status Donasi</th>
-                                    <th>Status Gateway</th>
+                                    <th>Status Transaksi</th>
+                                    <th>Status Provider</th>
                                     <th>Hasil Pemeriksaan</th>
                                     <th>Keterangan</th>
                                 </tr>
@@ -248,15 +259,17 @@ export default function ReconciliationIndex({
                                             </td>
 
                                             <td>
-                                                {item.gateway_status ? (
+                                                {item.provider_status ? (
                                                     <span
-                                                        className={`st-status ${item.gateway_status}`}
+                                                        className={`st-status ${item.provider_status}`}
                                                     >
-                                                        {statusLabels[item.gateway_status] ||
-                                                            item.gateway_status}
+                                                        {providerStatusLabels[item.provider_status] ||
+                                                            item.provider_status}
                                                     </span>
                                                 ) : (
-                                                    '-'
+                                                    <span className="st-status pending">
+                                                        Belum tersedia
+                                                    </span>
                                                 )}
                                             </td>
 
@@ -318,11 +331,12 @@ export default function ReconciliationIndex({
                 <div className="reconciliation-information">
                     <strong>Catatan pemeriksaan</strong>
                     <p>
-                        Pemeriksaan ini membandingkan data internal donasi
-                        dengan data transaksi pembayaran. Karena gateway
-                        pembayaran belum terintegrasi, hasil ini belum
-                        merupakan rekonsiliasi terhadap laporan eksternal
-                        Midtrans atau mutasi rekening.
+                        Pemeriksaan ini membandingkan nominal dan status internal
+                        donasi dengan catatan transaksi pembayaran. Status provider
+                        ditampilkan berdasarkan respons webhook yang tersimpan.
+                        Karena gateway pembayaran belum terintegrasi secara aktif,
+                        hasil ini belum merupakan rekonsiliasi terhadap laporan
+                        settlement eksternal Midtrans atau mutasi rekening.
                     </p>
                 </div>
             </div>

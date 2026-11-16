@@ -40,6 +40,7 @@ class ReconciliationController extends Controller
                 'donations.donation_amount',
                 'donations.operational_support',
                 'donations.payment_status',
+                'donations.created_at',
                 'payment_transactions.id as payment_transaction_id',
                 'payment_transactions.order_id',
                 'payment_transactions.gross_amount',
@@ -48,10 +49,10 @@ class ReconciliationController extends Controller
                 'payment_transactions.transaction_id',
                 'payment_transactions.payment_method',
                 'payment_transactions.paid_at',
+                'payment_transactions.raw_response',
                 'campaigns.title as campaign_title'
             );
 
-        // Filter pencarian
         if ($request->filled('search')) {
             $search = $request->search;
 
@@ -62,7 +63,6 @@ class ReconciliationController extends Controller
             });
         }
 
-        // Filter hasil rekonsiliasi
         if ($result === 'matched') {
             $query->whereNotNull('payment_transactions.id')
                 ->whereRaw(
@@ -103,8 +103,20 @@ class ReconciliationController extends Controller
                 $amountMatches = $gatewayAmount !== null
                     && $donationTotal === $gatewayAmount;
 
+                // Status transaksi yang sudah dinormalisasi oleh webhook.
                 $statusMatches = $item->gateway_status !== null
                     && $item->payment_status === $item->gateway_status;
+
+                // Ambil status asli dari respons Midtrans.
+                $rawResponse = $item->raw_response;
+
+                if (is_string($rawResponse)) {
+                    $rawResponse = json_decode($rawResponse, true);
+                }
+
+                $providerStatus = is_array($rawResponse)
+                    ? ($rawResponse['transaction_status'] ?? null)
+                    : null;
 
                 if ($item->payment_transaction_id === null) {
                     $reconciliationStatus = 'incomplete';
@@ -114,7 +126,7 @@ class ReconciliationController extends Controller
                     $reconciliationNote = 'Terdapat perbedaan nominal atau status pembayaran.';
                 } else {
                     $reconciliationStatus = 'matched';
-                    $reconciliationNote = 'Nominal dan status pembayaran sesuai.';
+                    $reconciliationNote = 'Nominal dan status internal pembayaran sesuai.';
                 }
 
                 return [
@@ -124,8 +136,17 @@ class ReconciliationController extends Controller
                     'campaign_title' => $item->campaign_title,
                     'donation_total' => $donationTotal,
                     'gateway_amount' => $gatewayAmount,
+
+                    // Status internal donasi.
                     'payment_status' => $item->payment_status,
+
+                    // Status internal transaksi pembayaran.
+                    // Dipertahankan agar halaman React lama tetap kompatibel.
                     'gateway_status' => $item->gateway_status,
+
+                    // Status asli dari provider, misalnya settlement.
+                    'provider_status' => $providerStatus,
+
                     'order_id' => $item->order_id,
                     'transaction_id' => $item->transaction_id,
                     'payment_method' => $item->payment_method,
@@ -137,7 +158,6 @@ class ReconciliationController extends Controller
                 ];
             });
 
-        // Ringkasan seluruh transaksi non-simulasi
         $summary = [
             'total' => DB::table('donations')
                 ->where('is_simulated', false)
