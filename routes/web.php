@@ -18,7 +18,7 @@ use App\Http\Controllers\Admin\CampaignController as AdminCampaignController;
 use App\Http\Controllers\Admin\BeneficiaryTargetController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Admin\DocumentationController;
-
+use App\Http\Controllers\Superadmin\SettingsController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -495,8 +495,13 @@ Route::get('/rekonsiliasi', [
 
     Route::get('/laporan/excel', [ReportController::class, 'exportExcel'])
         ->name('reports.excel');
-
+       
+    Route::get('/pengaturan', [SettingsController::class, 'index'])
+        ->name('settings.index');
+    
+    Route::put('/pengaturan', [SettingsController::class, 'update'])
+        ->name('settings.update');
         
-});
+    });
 
 });

@@ -19,7 +19,7 @@ const menus = [
     { id: 'expenses', label: 'Pengeluaran & Persetujuan', icon: ClipboardList, url: '/superadmin/pengeluaran' },
     { id: 'reports', label: 'Laporan & Transparansi', icon: ChartNoAxesCombined, url: '/superadmin/laporan' },
     { id: 'audit', label: 'Audit Log', icon: ClipboardList, url: '/superadmin/audit-log' },
-    { id: 'settings', label: 'Pengaturan Sistem', icon: Settings },
+    { id: 'settings', label: 'Pengaturan Sistem', icon: Settings, url: '/superadmin/pengaturan' },
 ];
 
 export default function SuperadminLayout({ title, activeMenu, children }) {
