@@ -490,3 +490,22 @@
         grid-column: auto;
     }
 }
+
+.sc-account-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 400;
+}
+
+.sc-account-status input {
+    width: 17px;
+    height: 17px;
+    accent-color: #16a34a;
+}
+
+.sc-account-status span {
+    font-size: 14px;
+    color: #475569;
+}

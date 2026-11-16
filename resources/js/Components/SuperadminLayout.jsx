@@ -4,7 +4,7 @@ import {
     LayoutDashboard, Users, Megaphone, Wallet,
     Receipt, HandHeart, ClipboardList, ChartNoAxesCombined,
     History, Settings, LogOut, Menu, X, Bell, ShieldCheck,
-    ArrowLeftRight
+    ArrowLeftRight, Landmark
 } from 'lucide-react';
 import '../../css/superadmin.css';
 
@@ -13,6 +13,7 @@ const menus = [
     { id: 'users', label: 'Manajemen Pengguna', icon: Users, url: '/superadmin/pengguna' },
     { id: 'programs', label: 'Manajemen Program', icon: Megaphone, url: '/superadmin/program' },
     { id: 'finance', label: 'Manajemen Keuangan', icon: Wallet, url: '/superadmin/keuangan' },
+    { id: 'donation-accounts', label: 'Rekening Donasi', icon: Landmark, url: '/superadmin/rekening-donasi' },
     { id: 'transactions', label: 'Manajemen Transaksi', icon: Receipt, url: '/superadmin/transaksi' },
     { id: 'reconciliation', label: 'Rekonsiliasi Transaksi', icon: ArrowLeftRight, url: '/superadmin/rekonsiliasi' },
     { id: 'distribution', label: 'Penyaluran Dana', icon: HandHeart, url: '/superadmin/penyaluran' },

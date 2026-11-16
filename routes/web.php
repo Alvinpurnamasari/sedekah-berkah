@@ -495,7 +495,43 @@ Route::get('/rekonsiliasi', [
 
     Route::get('/laporan/excel', [ReportController::class, 'exportExcel'])
         ->name('reports.excel');
-       
+
+    // Pengelolaan rekening donasi
+    Route::get('/rekening-donasi', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'index'
+    ])->name('donation-accounts.index');
+
+    Route::get('/rekening-donasi/tambah', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'create'
+    ])->name('donation-accounts.create');
+
+    Route::post('/rekening-donasi', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'store'
+    ])->name('donation-accounts.store');
+
+    Route::get('/rekening-donasi/{id}/edit', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'edit'
+    ])->name('donation-accounts.edit');
+
+    Route::put('/rekening-donasi/{id}', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'update'
+    ])->name('donation-accounts.update');
+
+    Route::patch('/rekening-donasi/{id}/status', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'toggleStatus'
+    ])->name('donation-accounts.status');
+
+    Route::delete('/rekening-donasi/{id}', [
+        \App\Http\Controllers\Superadmin\DonationAccountController::class,
+        'destroy'
+    ])->name('donation-accounts.destroy');
+
     Route::get('/pengaturan', [SettingsController::class, 'index'])
         ->name('settings.index');
     
