@@ -525,3 +525,229 @@
         height: 52px;
     }
 }
+
+/* Kartu rekening lebih ringkas */
+.donation-account-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    position: relative;
+}
+
+.donation-account-info {
+    align-items: flex-start;
+}
+
+.donation-account-copy {
+    margin-top: 9px;
+    width: fit-content;
+}
+
+/* Hindari kartu kampanye menutupi konten checkout */
+.campaign-summary {
+    position: relative !important;
+    top: auto !important;
+    z-index: 1;
+}
+
+/* ==========================================
+   REKENING DONASI
+========================================== */
+
+.donation-accounts {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 18px;
+    box-sizing: border-box;
+    background: #f8fbf8;
+    border: 1px solid #e3e9e3;
+    border-radius: 15px;
+}
+
+.donation-accounts h3 {
+    margin: 0 0 7px;
+    color: #175b40;
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.donation-accounts-description {
+    margin: 0 0 16px;
+    color: #7b887f;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.donation-account-list {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+    width: 100%;
+}
+
+.donation-account-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 85px;
+    padding: 15px 17px;
+    gap: 15px;
+    box-sizing: border-box;
+
+    background: #fff;
+    border: 1px solid #e1e8e2;
+    border-radius: 11px;
+
+    color: #263c30;
+    text-align: left;
+    font-family: inherit;
+
+    transition: all .2s ease;
+}
+
+.donation-account-item:hover {
+    border-color: #32936a;
+    background: #f5fbf7;
+}
+
+.donation-account-item.selected {
+    border: 1.5px solid #168052;
+    background: #eaf5ee;
+}
+
+.donation-account-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    min-width: 0;
+
+    color: #718078;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.donation-account-info strong {
+    color: #175b40;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.donation-account-number {
+    color: #243c30;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    overflow-wrap: anywhere;
+}
+
+.donation-account-info small {
+    color: #819087;
+    font-size: 12px;
+}
+
+.donation-account-item .payment-radio {
+    flex-shrink: 0;
+    margin-left: auto;
+    color: #168052;
+    font-size: 21px;
+}
+
+/* Tombol salin rekening */
+
+.donation-account-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: fit-content;
+    margin-top: 9px;
+    padding: 10px 17px;
+
+    border: none;
+    border-radius: 8px;
+    background: #176b4b;
+    color: #fff;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.donation-account-copy:hover {
+    background: #12563c;
+}
+
+/* Tidak ada rekening aktif */
+
+.donation-accounts-empty {
+    margin: 0;
+    padding: 16px;
+    background: #fff;
+    border: 1px dashed #cbd8ce;
+    border-radius: 10px;
+    color: #718078;
+    font-size: 13px;
+    text-align: center;
+}
+
+/* Ringkasan bank pada checkout */
+
+.payment-summary .summary-line strong {
+    overflow-wrap: anywhere;
+}
+
+/* Informasi rekening pada halaman sukses */
+
+.selected-account-detail {
+    margin-top: 18px;
+    padding: 18px;
+    border: 1px solid #b8dac5;
+    border-radius: 12px;
+    background: #edf7f0;
+    text-align: left;
+}
+
+.selected-account-detail > strong {
+    color: #718078;
+    font-size: 12px;
+}
+
+.selected-account-detail h3 {
+    margin: 10px 0;
+    color: #175b40;
+}
+
+.selected-account-detail p {
+    color: #62776b;
+    font-size: 13px;
+}
+
+/* Responsive rekening */
+
+@media (max-width: 600px) {
+    .donation-accounts {
+        padding: 13px;
+    }
+
+    .donation-account-item {
+        min-height: 75px;
+        padding: 13px;
+    }
+
+    .donation-account-number {
+        font-size: 15px;
+    }
+
+    .donation-account-copy {
+        width: 100%;
+    }
+
+    .selected-account-detail .donation-account-number {
+        font-size: 18px;
+    }
+}

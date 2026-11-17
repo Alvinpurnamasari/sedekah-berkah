@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import axios from 'axios';
@@ -12,29 +13,75 @@ const formatRupiah = (value) =>
 
 const nominalPilihan = [5000, 10000, 25000, 50000, 100000];
 
-export default function Checkout({ slug }) {
+const paymentMethods = [
+    {
+        value: 'qris',
+        symbol: '▦',
+        title: 'QRIS',
+        description: 'Semua e-wallet dan mobile banking',
+    },
+    {
+        value: 'bank_transfer',
+        symbol: '▤',
+        title: 'Transfer Bank',
+        description: 'Transfer melalui rekening bank tujuan',
+    },
+    {
+        value: 'ewallet',
+        symbol: '▣',
+        title: 'E-Wallet',
+        description: 'GoPay, OVO, DANA, dan lainnya',
+    },
+];
+
+export default function Checkout({
+    slug,
+    donationAccounts = [],
+}) {
     const [campaign, setCampaign] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    // Nominal donasi
     const [amount, setAmount] = useState(25000);
     const [customAmount, setCustomAmount] = useState('');
+
+    // Data donatur
     const [targetId, setTargetId] = useState('');
     const [name, setName] = useState('');
     const [contact, setContact] = useState('');
     const [anon, setAnon] = useState(false);
     const [message, setMessage] = useState('');
+
+    // Dukungan operasional
     const [supportEnabled, setSupportEnabled] = useState(false);
     const [supportAmount, setSupportAmount] = useState(0);
-    const [paymentMethod, setPaymentMethod] = useState('qris');
 
+    // Metode pembayaran
+    const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+    const [selectedDonationAccountId, setSelectedDonationAccountId] =
+        useState('');
+
+    // Status transaksi
     const [busy, setBusy] = useState(false);
     const [result, setResult] = useState(null);
 
+    // Status salin nomor rekening
+    const [copiedAccountId, setCopiedAccountId] = useState(null);
+
+    // Rekening yang dipilih
+    const selectedDonationAccount = donationAccounts.find(
+        (account) =>
+            String(account.id) === String(selectedDonationAccountId)
+    );
+
+    // Mengambil data kampanye
     useEffect(() => {
-        axios.get(`/api/v1/campaigns/${slug}`)
+        axios
+            .get(`/api/v1/campaigns/${slug}`)
             .then((response) => {
                 const data = response.data.data;
+
                 setCampaign(data);
 
                 if (data.beneficiary_targets?.length) {
@@ -44,28 +91,69 @@ export default function Checkout({ slug }) {
             .catch(() => {
                 setError('Kampanye tidak ditemukan atau belum tersedia.');
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                setLoading(false);
+            });
     }, [slug]);
 
+    // Perhitungan nominal
     const selectedAmount = Number(customAmount || amount);
-    const operationalAmount = supportEnabled ? Number(supportAmount || 0) : 0;
+    const operationalAmount = supportEnabled
+        ? Number(supportAmount || 0)
+        : 0;
 
     const total = useMemo(
         () => selectedAmount + operationalAmount,
         [selectedAmount, operationalAmount]
     );
 
+    // Target penerima yang dipilih
     const selectedTarget = campaign?.beneficiary_targets?.find(
         (target) => String(target.id) === String(targetId)
     );
 
+    // Salin nomor rekening
+    async function copyAccountNumber(account) {
+        try {
+            await navigator.clipboard.writeText(account.account_number);
+
+            setCopiedAccountId(account.id);
+
+            alert('Nomor rekening berhasil disalin.');
+        } catch (error) {
+            alert(
+                'Gagal menyalin nomor rekening. Silakan salin secara manual.'
+            );
+        }
+    }
+
+    // Memilih metode pembayaran
+    function handlePaymentMethodChange(method) {
+        setPaymentMethod(method);
+
+        if (method !== 'bank_transfer') {
+            setSelectedDonationAccountId('');
+        }
+    }
+
+    // Membuat transaksi donasi
     async function submitDonation(event) {
         event.preventDefault();
 
-        if (!campaign) return;
+        if (!campaign) {
+            return;
+        }
 
-        if (!Number.isInteger(selectedAmount) || selectedAmount < 5000) {
+        if (
+            !Number.isInteger(selectedAmount) ||
+            selectedAmount < 5000
+        ) {
             alert('Nominal sedekah minimal Rp5.000.');
+            return;
+        }
+
+        if (!Number.isInteger(operationalAmount) || operationalAmount < 0) {
+            alert('Nominal dukungan operasional tidak valid.');
             return;
         }
 
@@ -74,26 +162,51 @@ export default function Checkout({ slug }) {
             return;
         }
 
+        // QRIS dan E-Wallet belum diintegrasikan
+        if (paymentMethod !== 'bank_transfer') {
+            alert(
+                'Metode pembayaran ini belum tersedia. Silakan pilih Transfer Bank.'
+            );
+            return;
+        }
+
+        if (!selectedDonationAccountId) {
+            alert('Silakan pilih rekening bank tujuan transfer.');
+            return;
+        }
+
         setBusy(true);
 
         try {
             const response = await axios.post('/api/v1/donations', {
                 campaign_id: campaign.id,
+
                 beneficiary_target_id: targetId || null,
+
                 donor: {
                     name: name.trim(),
-                    email: contact.includes('@') ? contact.trim() : null,
-                    phone: contact.includes('@') ? null : contact.trim() || null,
+                    email: contact.includes('@')
+                        ? contact.trim()
+                        : null,
+                    phone: contact.includes('@')
+                        ? null
+                        : contact.trim() || null,
                 },
+
                 donation_amount: selectedAmount,
                 operational_support: operationalAmount,
+
                 is_anonymous: anon,
                 message: message.trim() || null,
+
+                payment_method: paymentMethod,
+                donation_account_id: selectedDonationAccountId,
             });
 
             setResult(response.data.data);
         } catch (err) {
             const validationErrors = err.response?.data?.errors;
+
             const firstError = validationErrors
                 ? Object.values(validationErrors).flat()[0]
                 : null;
@@ -108,15 +221,24 @@ export default function Checkout({ slug }) {
         }
     }
 
+    // Tampilan loading
     if (loading) {
-        return <div className="checkout-loading">Memuat kampanye...</div>;
+        return (
+            <div className="checkout-loading">
+                Memuat kampanye...
+            </div>
+        );
     }
 
+    // Tampilan error
     if (error || !campaign) {
         return (
             <div className="checkout-loading">
                 <p>{error || 'Kampanye tidak ditemukan.'}</p>
-                <Link href="/program">Kembali ke program</Link>
+
+                <Link href="/program">
+                    Kembali ke program
+                </Link>
             </div>
         );
     }
@@ -125,10 +247,15 @@ export default function Checkout({ slug }) {
         <main className="checkout-page">
             <Head title={`Checkout - ${campaign.title}`} />
 
+            {/* HEADER */}
             <header className="checkout-header">
                 <Link href="/" className="checkout-brand">
                     <span className="checkout-brand-icon">♥</span>
-                    <span>Sedekah<br /><b>Berkah</b></span>
+
+                    <span>
+                        Sedekah<br />
+                        <b>Berkah</b>
+                    </span>
                 </Link>
 
                 <nav>
@@ -139,78 +266,164 @@ export default function Checkout({ slug }) {
             </header>
 
             <div className="checkout-container">
-                <Link href={`/program/${slug}`} className="checkout-back">
+                <Link
+                    href={`/program/${slug}`}
+                    className="checkout-back"
+                >
                     ← Kembali ke kampanye
                 </Link>
 
+                {/* HALAMAN SUKSES */}
                 {result ? (
                     <section className="checkout-success">
                         <div className="success-icon">✓</div>
+
                         <h1>Terima kasih atas sedekah Anda!</h1>
-                        <p>Transaksi donasi berhasil dibuat dan menunggu pembayaran.</p>
+
+                        <p>
+                            Transaksi donasi berhasil dibuat dan menunggu pembayaran.
+                        </p>
 
                         <div className="success-detail">
                             <span>Kode donasi</span>
+
                             <strong>{result.donation_code}</strong>
 
                             <span>Total pembayaran</span>
+
                             <strong className="success-total">
                                 {formatRupiah(result.total_amount)}
                             </strong>
 
+                            <span>Metode pembayaran</span>
+
+                            <strong>Transfer Bank</strong>
+
                             <span>Status</span>
+
                             <strong>Menunggu pembayaran</strong>
                         </div>
 
+                        {result.bank_account && (
+                            <div className="selected-account-detail">
+                                <strong>
+                                    Silakan transfer ke rekening berikut
+                                </strong>
+
+                                <h3>
+                                    {result.bank_account.bank_name}
+                                </h3>
+
+                                <div className="donation-account-number">
+                                    {result.bank_account.account_number}
+                                </div>
+
+                                <p>
+                                    Atas nama: {result.bank_account.account_holder}
+                                </p>
+
+                                <button
+                                    type="button"
+                                    className="donation-account-copy"
+                                    onClick={() =>
+                                        copyAccountNumber({
+                                            id: 'success',
+                                            account_number:
+                                                result.bank_account.account_number,
+                                        })
+                                    }
+                                >
+                                    {copiedAccountId === 'success'
+                                        ? 'Tersalin'
+                                        : 'Salin Nomor Rekening'}
+                                </button>
+                            </div>
+                        )}
+
                         <p className="checkout-notice">
-                            Metode {paymentMethod.toUpperCase()} sudah dipilih,
-                            tetapi instruksi pembayaran belum tersedia karena
-                            payment gateway belum diintegrasikan.
+                            Silakan transfer sesuai total pembayaran.
+                            Donasi akan diverifikasi oleh pengelola setelah
+                            pembayaran diterima.
                         </p>
 
-                        <Link href="/program" className="checkout-primary">
+                        <Link
+                            href="/program"
+                            className="checkout-primary"
+                        >
                             Lihat program lainnya
                         </Link>
                     </section>
                 ) : (
-                    <form onSubmit={submitDonation} className="checkout-layout">
+                    <form
+                        onSubmit={submitDonation}
+                        className="checkout-layout"
+                    >
                         <div className="checkout-main">
+
+                            {/* INFORMASI KAMPANYE */}
                             <section className="checkout-card campaign-summary">
-                                <div className="campaign-thumb">♥</div>
+                                <div className="campaign-thumb">
+                                    ♥
+                                </div>
+
                                 <div>
                                     <span className="checkout-eyebrow">
-                                        {campaign.category?.name || 'Program Sedekah'}
+                                        {campaign.category?.name ||
+                                            'Program Sedekah'}
                                     </span>
+
                                     <h2>{campaign.title}</h2>
-                                    <p>{campaign.location || 'Yogyakarta'}</p>
+
+                                    <p>
+                                        {campaign.location || 'Yogyakarta'}
+                                    </p>
                                 </div>
                             </section>
 
+                            {/* TARGET PENERIMA */}
                             <section className="checkout-card">
-                                <h2><span>1</span> Pilih target penerima</h2>
+                                <h2>
+                                    <span>1</span>
+                                    Pilih target penerima
+                                </h2>
+
                                 <p className="checkout-description">
-                                    Tentukan kelompok penerima manfaat dari sedekah Anda.
+                                    Tentukan kelompok penerima manfaat
+                                    dari sedekah Anda.
                                 </p>
 
                                 <div className="target-options">
-                                    {(campaign.beneficiary_targets || []).map((target) => (
-                                        <button
-                                            type="button"
-                                            key={target.id}
-                                            className={`target-option ${
-                                                String(targetId) === String(target.id)
-                                                    ? 'selected'
-                                                    : ''
-                                            }`}
-                                            onClick={() => setTargetId(String(target.id))}
-                                        >
-                                            <strong>{target.name}</strong>
-                                            <small>{target.description || 'Penerima manfaat kampanye'}</small>
-                                            {String(targetId) === String(target.id) && (
-                                                <span className="target-check">✓</span>
-                                            )}
-                                        </button>
-                                    ))}
+                                    {(campaign.beneficiary_targets || []).map(
+                                        (target) => (
+                                            <button
+                                                type="button"
+                                                key={target.id}
+                                                className={`target-option ${
+                                                    String(targetId) ===
+                                                    String(target.id)
+                                                        ? 'selected'
+                                                        : ''
+                                                }`}
+                                                onClick={() =>
+                                                    setTargetId(String(target.id))
+                                                }
+                                            >
+                                                <strong>{target.name}</strong>
+
+                                                <small>
+                                                    {target.description ||
+                                                        'Penerima manfaat kampanye'}
+                                                </small>
+
+                                                {String(targetId) ===
+                                                    String(target.id) && (
+                                                    <span className="target-check">
+                                                        ✓
+                                                    </span>
+                                                )}
+                                            </button>
+                                        )
+                                    )}
 
                                     <button
                                         type="button"
@@ -219,17 +432,29 @@ export default function Checkout({ slug }) {
                                         }`}
                                         onClick={() => setTargetId('')}
                                     >
-                                        <strong>Serahkan kepada Pengelola</strong>
-                                        <small>Pengelola menyalurkan sesuai kebutuhan.</small>
+                                        <strong>
+                                            Serahkan kepada Pengelola
+                                        </strong>
+
+                                        <small>
+                                            Pengelola menyalurkan sesuai kebutuhan.
+                                        </small>
+
                                         {targetId === '' && (
-                                            <span className="target-check">✓</span>
+                                            <span className="target-check">
+                                                ✓
+                                            </span>
                                         )}
                                     </button>
                                 </div>
                             </section>
 
+                            {/* NOMINAL SEDEKAH */}
                             <section className="checkout-card">
-                                <h2><span>2</span> Nominal sedekah</h2>
+                                <h2>
+                                    <span>2</span>
+                                    Nominal sedekah
+                                </h2>
 
                                 <div className="amount-options">
                                     {nominalPilihan.map((value) => (
@@ -237,7 +462,8 @@ export default function Checkout({ slug }) {
                                             type="button"
                                             key={value}
                                             className={
-                                                !customAmount && amount === value
+                                                !customAmount &&
+                                                amount === value
                                                     ? 'amount-option selected'
                                                     : 'amount-option'
                                             }
@@ -253,38 +479,51 @@ export default function Checkout({ slug }) {
 
                                 <label className="checkout-label">
                                     Nominal lainnya (Rp)
+
                                     <input
                                         type="number"
                                         min="5000"
                                         step="1000"
                                         value={customAmount}
-                                        onChange={(event) => setCustomAmount(event.target.value)}
+                                        onChange={(event) =>
+                                            setCustomAmount(event.target.value)
+                                        }
                                         placeholder="Masukkan nominal sendiri"
                                     />
                                 </label>
                             </section>
 
+                            {/* DATA PENSEDEKAH */}
                             <section className="checkout-card">
-                                <h2><span>3</span> Data pensedekah</h2>
+                                <h2>
+                                    <span>3</span>
+                                    Data pensedekah
+                                </h2>
 
                                 <label className="checkout-label">
                                     Nama lengkap
+
                                     <input
                                         type="text"
                                         required
                                         maxLength="120"
                                         value={name}
-                                        onChange={(event) => setName(event.target.value)}
+                                        onChange={(event) =>
+                                            setName(event.target.value)
+                                        }
                                         placeholder="Nama lengkap atau Hamba Allah"
                                     />
                                 </label>
 
                                 <label className="checkout-label">
                                     Email atau nomor WhatsApp
+
                                     <input
                                         type="text"
                                         value={contact}
-                                        onChange={(event) => setContact(event.target.value)}
+                                        onChange={(event) =>
+                                            setContact(event.target.value)
+                                        }
                                         placeholder="Email atau nomor WhatsApp"
                                     />
                                 </label>
@@ -293,37 +532,55 @@ export default function Checkout({ slug }) {
                                     <input
                                         type="checkbox"
                                         checked={anon}
-                                        onChange={(event) => setAnon(event.target.checked)}
+                                        onChange={(event) =>
+                                            setAnon(event.target.checked)
+                                        }
                                     />
-                                    <span>Sembunyikan nama saya (Hamba Allah)</span>
+
+                                    <span>
+                                        Sembunyikan nama saya (Hamba Allah)
+                                    </span>
                                 </label>
 
                                 <label className="checkout-label">
                                     Doa atau pesan (opsional)
+
                                     <textarea
                                         rows="3"
                                         maxLength="500"
                                         value={message}
-                                        onChange={(event) => setMessage(event.target.value)}
+                                        onChange={(event) =>
+                                            setMessage(event.target.value)
+                                        }
                                         placeholder="Tuliskan doa atau pesan..."
                                     />
                                 </label>
 
+                                {/* DUKUNGAN OPERASIONAL */}
                                 <div className="support-box">
                                     <label className="checkout-check">
                                         <input
                                             type="checkbox"
                                             checked={supportEnabled}
                                             onChange={(event) => {
-                                                setSupportEnabled(event.target.checked);
-                                                if (!event.target.checked) setSupportAmount(0);
+                                                setSupportEnabled(
+                                                    event.target.checked
+                                                );
+
+                                                if (!event.target.checked) {
+                                                    setSupportAmount(0);
+                                                }
                                             }}
                                         />
+
                                         <span>
-                                            <strong>Dukung biaya operasional (sukarela)</strong>
+                                            <strong>
+                                                Dukung biaya operasional (sukarela)
+                                            </strong>
+
                                             <small>
-                                                Bantuan untuk relawan, logistik, dan dokumentasi.
-                                                Tidak wajib.
+                                                Bantuan untuk relawan, logistik,
+                                                dan dokumentasi. Tidak wajib.
                                             </small>
                                         </span>
                                     </label>
@@ -331,13 +588,16 @@ export default function Checkout({ slug }) {
                                     {supportEnabled && (
                                         <label className="checkout-label">
                                             Nominal dukungan operasional (Rp)
+
                                             <input
                                                 type="number"
                                                 min="0"
                                                 step="1000"
                                                 value={supportAmount}
                                                 onChange={(event) =>
-                                                    setSupportAmount(event.target.value)
+                                                    setSupportAmount(
+                                                        event.target.value
+                                                    )
                                                 }
                                                 placeholder="Masukkan nominal dukungan"
                                             />
@@ -346,42 +606,161 @@ export default function Checkout({ slug }) {
                                 </div>
                             </section>
 
+                            {/* METODE PEMBAYARAN */}
                             <section className="checkout-card">
-                                <h2><span>4</span> Metode pembayaran</h2>
+                                <h2>
+                                    <span>4</span>
+                                    Metode pembayaran
+                                </h2>
 
                                 <div className="payment-options">
-                                    {[
-                                        ['qris', '▦', 'QRIS', 'Semua e-wallet dan mobile banking'],
-                                        ['virtual_account', '▤', 'Virtual Account', 'Transfer melalui rekening bank'],
-                                        ['ewallet', '▣', 'E-Wallet', 'GoPay, OVO, DANA, dan lainnya'],
-                                    ].map(([value, symbol, title, description]) => (
+                                    {paymentMethods.map((method) => (
                                         <button
                                             type="button"
-                                            key={value}
+                                            key={method.value}
                                             className={`payment-option ${
-                                                paymentMethod === value ? 'selected' : ''
+                                                paymentMethod === method.value
+                                                    ? 'selected'
+                                                    : ''
                                             }`}
-                                            onClick={() => setPaymentMethod(value)}
+                                            onClick={() =>
+                                                handlePaymentMethodChange(
+                                                    method.value
+                                                )
+                                            }
                                         >
-                                            <span className="payment-symbol">{symbol}</span>
-                                            <span>
-                                                <strong>{title}</strong>
-                                                <small>{description}</small>
+                                            <span className="payment-symbol">
+                                                {method.symbol}
                                             </span>
+
+                                            <span>
+                                                <strong>{method.title}</strong>
+
+                                                <small>
+                                                    {method.description}
+                                                </small>
+                                            </span>
+
                                             <span className="payment-radio">
-                                                {paymentMethod === value ? '●' : '○'}
+                                                {paymentMethod === method.value
+                                                    ? '●'
+                                                    : '○'}
                                             </span>
                                         </button>
                                     ))}
                                 </div>
 
-                                <p className="checkout-notice">
-                                    Pilihan metode pembayaran akan diaktifkan setelah
-                                    integrasi payment gateway selesai.
-                                </p>
+                                {/* PILIH REKENING BANK */}
+                                {paymentMethod === 'bank_transfer' && (
+                                    <div className="donation-accounts">
+                                        <h3>Pilih Bank Tujuan</h3>
+
+                                        <p className="donation-accounts-description">
+                                            Pilih salah satu rekening aktif
+                                            untuk tujuan transfer donasi.
+                                        </p>
+
+                                        {donationAccounts.length > 0 ? (
+                                            <div className="donation-account-list">                        
+                                            {donationAccounts.map((account) => {
+                                                const isSelected =
+                                                    String(selectedDonationAccountId) === String(account.id);
+
+                                                return (
+                                                    <div
+                                                        key={account.id}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        aria-pressed={isSelected}
+                                                        className={`donation-account-item ${
+                                                            isSelected ? 'selected' : ''
+                                                        }`}
+                                                        onClick={() => setSelectedDonationAccountId(account.id)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault();
+                                                                setSelectedDonationAccountId(account.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div className="donation-account-info">
+                                                            <strong>{account.bank_name}</strong>
+
+                                                            <span className="donation-account-number">
+                                                                {account.account_number}
+                                                            </span>
+
+                                                            <span>
+                                                                Atas nama: {account.account_holder}
+                                                            </span>
+
+                                                            {account.description && (
+                                                                <small>{account.description}</small>
+                                                            )}
+
+                                                            {isSelected && (
+                                                                <button
+                                                                    type="button"
+                                                                    className="donation-account-copy"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        copyAccountNumber(account);
+                                                                    }}
+                                                                >
+                                                                    {copiedAccountId === account.id
+                                                                        ? 'Tersalin'
+                                                                        : 'Salin Nomor Rekening'}
+                                                                </button>
+                                                            )}
+                                                        </div>
+
+                                                        <span className="payment-radio">
+                                                            {isSelected ? '●' : '○'}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+
+                                            </div>
+                                        ) : (
+                                            <p className="donation-accounts-empty">
+                                                Belum ada rekening aktif.
+                                                Silakan hubungi pengelola.
+                                            </p>
+                                        )}
+
+                                    </div>
+                                )}
+
+                                {/* INFORMASI QRIS */}
+                                {paymentMethod === 'qris' && (
+                                    <p className="checkout-notice">
+                                        Pembayaran QRIS belum tersedia.
+                                        Silakan gunakan Transfer Bank
+                                        untuk menyelesaikan donasi saat ini.
+                                    </p>
+                                )}
+
+                                {/* INFORMASI EWALLET */}
+                                {paymentMethod === 'ewallet' && (
+                                    <p className="checkout-notice">
+                                        Pembayaran E-Wallet belum tersedia.
+                                        Silakan gunakan Transfer Bank
+                                        untuk menyelesaikan donasi saat ini.
+                                    </p>
+                                )}
+
+                                {paymentMethod === 'bank_transfer' && (
+                                    <p className="checkout-notice">
+                                        Transfer dilakukan secara manual.
+                                        Donasi akan berstatus menunggu pembayaran
+                                        sampai pengelola melakukan verifikasi.
+                                    </p>
+                                )}
                             </section>
                         </div>
 
+                        {/* RINGKASAN PEMBAYARAN */}
                         <aside className="checkout-sidebar">
                             <div className="checkout-card payment-summary">
                                 <h3>Ringkasan sedekah</h3>
@@ -392,30 +771,58 @@ export default function Checkout({ slug }) {
 
                                 <div className="summary-line">
                                     <span>Sedekah</span>
-                                    <strong>{formatRupiah(selectedAmount)}</strong>
+
+                                    <strong>
+                                        {formatRupiah(selectedAmount)}
+                                    </strong>
                                 </div>
 
                                 <div className="summary-line">
                                     <span>Dukungan operasional</span>
-                                    <strong>{formatRupiah(operationalAmount)}</strong>
+
+                                    <strong>
+                                        {formatRupiah(operationalAmount)}
+                                    </strong>
                                 </div>
 
                                 <div className="summary-line">
                                     <span>Penerima</span>
-                                    <strong>{selectedTarget?.name || 'Dikelola pengelola'}</strong>
+
+                                    <strong>
+                                        {selectedTarget?.name ||
+                                            'Dikelola pengelola'}
+                                    </strong>
                                 </div>
 
                                 <div className="summary-total">
                                     <span>Total pembayaran</span>
+
                                     <strong>{formatRupiah(total)}</strong>
                                 </div>
+
+                                {paymentMethod === 'bank_transfer' &&
+                                    selectedDonationAccount && (
+                                        <div className="summary-line">
+                                            <span>Bank tujuan</span>
+
+                                            <strong>
+                                                {selectedDonationAccount.bank_name}
+                                            </strong>
+                                        </div>
+                                    )}
 
                                 <button
                                     type="submit"
                                     className="checkout-primary"
-                                    disabled={busy}
+                                    disabled={
+                                        busy ||
+                                        (paymentMethod === 'bank_transfer' &&
+                                            donationAccounts.length === 0)
+                                    }
                                 >
-                                    {busy ? 'Memproses...' : 'Buat Transaksi'}
+                                    {busy
+                                        ? 'Memproses...'
+                                        : 'Buat Transaksi'}
                                 </button>
 
                                 <p className="checkout-secure">

@@ -78,9 +78,25 @@ Route::get('/program', function () {
 Route::get('/program/{slug}', [CampaignController::class, 'show'])
     ->name('programs.show');
 
-Route::get('/checkout/{slug}', fn ($slug) =>
-    Inertia::render('Public/Checkout', ['slug' => $slug])
-)->name('checkout.show');
+
+    Route::get('/checkout/{slug}', function ($slug) {
+        $donationAccounts = DB::table('donation_accounts')
+            ->where('is_active', true)
+            ->orderBy('bank_name')
+            ->get([
+                'id',
+                'bank_name',
+                'account_number',
+                'account_holder',
+                'description',
+            ]);
+    
+        return Inertia::render('Public/Checkout', [
+            'slug' => $slug,
+            'donationAccounts' => $donationAccounts,
+        ]);
+    })->name('checkout.show');
+    
 
 Route::get('/transparansi', [
     \App\Http\Controllers\PublicTransparencyController::class,
