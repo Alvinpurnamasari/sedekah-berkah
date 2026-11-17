@@ -1,62 +1,22 @@
 <?php
 
-namespace App\Models;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-
-class Distribution extends Model
+return new class extends Migration
 {
-    use HasUuids;
-
-    protected $fillable = [
-        'campaign_id',
-        'title',
-        'distribution_date',
-        'location',
-        'planned_quantity',
-        'actual_quantity',
-        'total_cost',
-        'status',
-        'report_status',
-        'created_by',
-        'report_reviewed_by',
-        'report_reviewed_at',
-        'report_revision_note',
-    ];
-
-    protected $casts = [
-        'distribution_date' => 'date',
-        'report_reviewed_at' => 'datetime',
-        'planned_quantity' => 'integer',
-        'actual_quantity' => 'integer',
-        'total_cost' => 'integer',
-    ];
-
-    public function campaign(): BelongsTo
+    public function up(): void
     {
-        return $this->belongsTo(Campaign::class);
+        Schema::table('expenses', function (Blueprint $table) {
+            $table->string('expense_type')->nullable()->after('distribution_id');
+        });
     }
 
-    public function expenses(): HasMany
+    public function down(): void
     {
-        return $this->hasMany(Expense::class);
+        Schema::table('expenses', function (Blueprint $table) {
+            $table->dropColumn('expense_type');
+        });
     }
-
-    public function documents(): HasMany
-    {
-        return $this->hasMany(DistributionDocument::class);
-    }
-
-    public function creator(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function reviewer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'report_reviewed_by');
-    }
-}
+};
