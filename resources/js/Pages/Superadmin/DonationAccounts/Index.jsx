@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import SuperadminLayout from '../../../Components/SuperadminLayout';
 import {
     Landmark, Search, Plus, Pencil, Trash2,
@@ -12,6 +12,8 @@ export default function DonationAccountIndex({
     accounts,
     filters = {},
 }) {
+    const { flash = {} } = usePage().props;
+
     const [search, setSearch] = useState(filters.search || '');
     const [status, setStatus] = useState(filters.status || '');
 
@@ -55,7 +57,23 @@ export default function DonationAccountIndex({
             activeMenu="donation-accounts"
         >
             <Head title="Rekening Donasi - Sedekah Berkah" />
-
+            {(flash.success || flash.error) && (
+                <div
+                    role="alert"
+                    style={{
+                        padding: '14px 18px',
+                        marginBottom: '20px',
+                        borderRadius: '10px',
+                        background: flash.error ? '#fef2f2' : '#ecfdf5',
+                        color: flash.error ? '#b91c1c' : '#047857',
+                        border: `1px solid ${flash.error ? '#fecaca' : '#a7f3d0'}`,
+                        fontSize: '14px',
+                        fontWeight: 500,
+                    }}
+                >
+                    {flash.error || flash.success}
+                </div>
+            )}
             <div className="sc-page">
                 <section className="sc-intro">
                     <div>

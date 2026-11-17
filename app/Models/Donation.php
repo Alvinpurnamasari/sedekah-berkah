@@ -23,6 +23,10 @@ class Donation extends Model
         'is_anonymous',
         'message',
         'payment_status',
+        'donation_account_id',
+        'bank_name',
+        'bank_account_number',
+        'bank_account_holder',
     ];
 
     protected $casts = [
@@ -36,7 +40,15 @@ class Donation extends Model
         return $this->belongsTo(Campaign::class);
     }
     public function user(): BelongsTo
-{
-    return $this->belongsTo(User::class);
-}
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function donationAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            DonationAccount::class,
+            'donation_account_id'
+        );
+    }
 }

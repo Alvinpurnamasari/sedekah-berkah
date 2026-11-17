@@ -7,6 +7,7 @@ use App\Models\DonationAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Models\Donation;
 
 class DonationAccountController extends Controller
 {
@@ -187,31 +188,57 @@ class DonationAccountController extends Controller
      * Menghapus rekening.
      */
     public function destroy(Request $request, string $id)
-    {
-        $account = DonationAccount::findOrFail($id);
+{
+    $result = DB::transaction(function () use ($request, $id) {
 
-        DB::transaction(function () use ($account, $request) {
-            $metadata = [
-                'bank_name' => $account->bank_name,
-                'account_number' => $account->account_number,
-                'account_holder' => $account->account_holder,
-                'is_active' => $account->is_active,
-            ];
+        // Kunci rekening agar tidak digunakan transaksi baru
+        // selama proses pemeriksaan penghapusan.
+        $account = DonationAccount::whereKey($id)
+            ->lockForUpdate()
+            ->firstOrFail();
 
-            $this->writeAudit(
-                $request,
-                'donation_account_deleted',
-                $account,
-                $metadata
-            );
+        // Periksa apakah rekening pernah digunakan donasi.
+        $hasDonations = Donation::where(
+            'donation_account_id',
+            $account->id
+        )->exists();
 
-            $account->delete();
-        });
+        if ($hasDonations) {
+            return false;
+        }
 
+        $metadata = [
+            'bank_name' => $account->bank_name,
+            'account_number' => $account->account_number,
+            'account_holder' => $account->account_holder,
+            'is_active' => $account->is_active,
+        ];
+
+        $this->writeAudit(
+            $request,
+            'donation_account_deleted',
+            $account,
+            $metadata
+        );
+
+        $account->delete();
+
+        return true;
+    });
+
+    if (!$result) {
         return redirect()
             ->route('superadmin.donation-accounts.index')
-            ->with('success', 'Rekening donasi berhasil dihapus.');
+            ->with(
+                'error',
+                'Rekening tidak dapat dihapus karena sudah digunakan dalam transaksi donasi. Silakan nonaktifkan rekening.'
+            );
     }
+
+    return redirect()
+        ->route('superadmin.donation-accounts.index')
+        ->with('success', 'Rekening donasi berhasil dihapus.');
+}
 
     /**
      * Mencatat aktivitas rekening ke Audit Log.
