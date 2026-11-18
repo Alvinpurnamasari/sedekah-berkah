@@ -36,14 +36,26 @@ const providerStatusLabels = {
     partial_refund: 'Partial Refund',
     failure: 'Failure',
 };
+const providerLabels = {
+    midtrans: 'Midtrans',
+    manual_bank_transfer: 'Transfer Bank Manual',
+};
+
+const proofStatusLabels = {
+    pending: 'Menunggu verifikasi',
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+};
 const resultLabels = {
     matched: 'Cocok',
+    pending: 'Menunggu',
     review: 'Perlu diperiksa',
     incomplete: 'Belum lengkap',
 };
 
 const resultColors = {
     matched: 'paid',
+    pending: 'pending',
     review: 'failed',
     incomplete: 'pending',
 };
@@ -92,6 +104,13 @@ export default function ReconciliationIndex({
             icon: CheckCircle,
             color: 'green',
             description: 'Nominal dan status sesuai',
+        },
+        {
+            label: 'Pending',
+            value: summary.pending,
+            icon: AlertCircle,
+            color: 'yellow',
+            description: 'Menunggu pembayaran atau verifikasi',
         },
         {
             label: 'Perlu Diperiksa',
@@ -184,6 +203,7 @@ export default function ReconciliationIndex({
                         >
                             <option value="">Semua hasil</option>
                             <option value="matched">Cocok</option>
+                            <option value="pending">Pending</option>
                             <option value="review">Perlu diperiksa</option>
                             <option value="incomplete">Belum lengkap</option>
                         </select>
@@ -215,6 +235,8 @@ export default function ReconciliationIndex({
                                     <th>Program</th>
                                     <th>Total Donasi</th>
                                     <th>Nominal Transaksi</th>
+                                    <th>Metode Pembayaran</th>
+                                    <th>Status Bukti Transfer</th>
                                     <th>Status Donasi</th>
                                     <th>Status Transaksi</th>
                                     <th>Status Provider</th>
@@ -249,22 +271,49 @@ export default function ReconciliationIndex({
                                                     : '-'}
                                             </td>
 
+                                            {/* Metode pembayaran */}
                                             <td>
-                                                <span
-                                                    className={`st-status ${item.payment_status}`}
-                                                >
-                                                    {statusLabels[item.payment_status] ||
-                                                        item.payment_status}
+                                                {providerLabels[item.provider] || 'Tidak diketahui'}
+                                            </td>
+
+                                            {/* Status bukti transfer */}
+                                            <td>
+                                                {item.provider === 'manual_bank_transfer' ? (
+                                                    <span className={`st-status ${
+                                                        item.proof_status === 'approved'
+                                                            ? 'paid'
+                                                            : item.proof_status === 'rejected'
+                                                                ? 'failed'
+                                                                : 'pending'
+                                                    }`}>
+                                                        {item.proof_status
+                                                            ? proofStatusLabels[item.proof_status] || item.proof_status
+                                                            : 'Belum diunggah'}
+                                                    </span>
+                                                ) : (
+                                                    '-'
+                                                )}
+                                            </td>
+
+                                            {/* Status donasi */}
+                                            <td>
+                                                <span className={`st-status ${item.payment_status}`}>
+                                                    {statusLabels[item.payment_status] || item.payment_status}
                                                 </span>
                                             </td>
 
+                                            {/* Status internal transaksi */}
+                                            <td>
+                                                <span className={`st-status ${item.gateway_status || 'pending'}`}>
+                                                    {statusLabels[item.gateway_status] || item.gateway_status || 'Belum tersedia'}
+                                                </span>
+                                            </td>
+
+                                            {/* Status asli provider */}
                                             <td>
                                                 {item.provider_status ? (
-                                                    <span
-                                                        className={`st-status ${item.provider_status}`}
-                                                    >
-                                                        {providerStatusLabels[item.provider_status] ||
-                                                            item.provider_status}
+                                                    <span className={`st-status ${item.provider_status}`}>
+                                                        {providerStatusLabels[item.provider_status] || item.provider_status}
                                                     </span>
                                                 ) : (
                                                     <span className="st-status pending">
@@ -273,14 +322,14 @@ export default function ReconciliationIndex({
                                                 )}
                                             </td>
 
+                                            {/* Hasil pemeriksaan */}
                                             <td>
-                                                <span
-                                                    className={`st-status ${resultColors[item.reconciliation_status]}`}
-                                                >
+                                                <span className={`st-status ${resultColors[item.reconciliation_status]}`}>
                                                     {resultLabels[item.reconciliation_status]}
                                                 </span>
                                             </td>
 
+                                            {/* Keterangan */}
                                             <td className="reconciliation-note">
                                                 {item.reconciliation_note}
                                             </td>
@@ -289,7 +338,7 @@ export default function ReconciliationIndex({
                                 ) : (
                                     <tr>
                                         <td
-                                            colSpan="9"
+                                            colSpan="12"
                                             className="st-empty"
                                         >
                                             Belum ada transaksi yang sesuai.

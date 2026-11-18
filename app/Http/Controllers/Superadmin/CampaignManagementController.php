@@ -113,7 +113,7 @@ class CampaignManagementController extends Controller
         $data = $this->validateCampaign($request);
 
         DB::transaction(function () use ($data) {
-            $targetIds = $data['beneficiary_targets'];
+            $targetIds = $data['beneficiary_targets'] ?? [];
             unset($data['beneficiary_targets']);
 
             $data['slug'] = $this->makeUniqueSlug($data['title']);
@@ -158,10 +158,15 @@ class CampaignManagementController extends Controller
     public function update(Request $request, string $id)
     {
         $campaign = Campaign::findOrFail($id);
+        abort_if(
+            $campaign->status === 'pending_approval',
+            403,
+            'Program yang menunggu persetujuan tidak dapat diedit.'
+        );
         $data = $this->validateCampaign($request);
 
         DB::transaction(function () use ($campaign, $data) {
-            $targetIds = $data['beneficiary_targets'];
+            $targetIds = $data['beneficiary_targets'] ?? [];
             unset($data['beneficiary_targets']);
 
             // Slug tetap dipertahankan saat judul tidak berubah.
@@ -226,14 +231,15 @@ class CampaignManagementController extends Controller
                 'max:255',
             ],
             'beneficiary_targets' => [
-                'required',
+                'nullable',
                 'array',
-                'min:1',
             ],
             'beneficiary_targets.*' => [
+                'required',
                 'integer',
                 'distinct',
-                'exists:beneficiary_targets,id',
+                Rule::exists('beneficiary_targets', 'id')
+                    ->where('is_active', true),
             ],
         ]);
     }
@@ -263,43 +269,55 @@ class CampaignManagementController extends Controller
         return $slug;
     }
     public function destroy(string $id)
-    {
-        $campaign = Campaign::findOrFail($id);
-    
-        // Cegah penghapusan jika memiliki riwayat keuangan
+{
+    $deleted = DB::transaction(function () use ($id) {
+        $campaign = Campaign::whereKey($id)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        // Program yang sedang diajukan tidak boleh dihapus.
+        if ($campaign->status === 'pending_approval') {
+            return false;
+        }
+
+        // Lindungi seluruh riwayat keuangan.
         $hasDonations = DB::table('donations')
             ->where('campaign_id', $id)
             ->exists();
-    
+
         $hasDistributions = DB::table('distributions')
             ->where('campaign_id', $id)
             ->exists();
-    
+
         $hasExpenses = DB::table('expenses')
             ->where('campaign_id', $id)
             ->exists();
-    
+
         if ($hasDonations || $hasDistributions || $hasExpenses) {
-            return redirect()
-                ->route('superadmin.campaigns.index')
-                ->setStatusCode(303)
-                ->with(
-                    'error',
-                    'Program tidak dapat dihapus karena sudah memiliki riwayat donasi, penyaluran, atau pengeluaran.'
-                );
+            return false;
         }
-    
-        DB::table('campaign_beneficiary_target')
-            ->where('campaign_id', $id)
-            ->delete();
-    
+
+        $campaign->beneficiaryTargets()->detach();
         $campaign->delete();
-    
+
+        return true;
+    });
+
+    if (!$deleted) {
         return redirect()
             ->route('superadmin.campaigns.index')
             ->setStatusCode(303)
-            ->with('success', 'Program berhasil dihapus.');
+            ->with(
+                'error',
+                'Program tidak dapat dihapus karena sedang menunggu persetujuan atau memiliki riwayat transaksi.'
+            );
     }
+
+    return redirect()
+        ->route('superadmin.campaigns.index')
+        ->setStatusCode(303)
+        ->with('success', 'Program berhasil dihapus.');
+}
 
     /**
      * Menyetujui pengajuan program dan langsung mempublikasikannya.
