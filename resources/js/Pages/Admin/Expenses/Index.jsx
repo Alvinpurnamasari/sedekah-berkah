@@ -27,9 +27,15 @@ const statusLabel = {
     approved: 'Disetujui',
     rejected: 'Ditolak',
 };
-
+const paymentStatusLabel = {
+    unpaid: 'Belum Dibayar',
+    paid: 'Sudah Dibayar',
+};
 export default function Index({ expenses, campaigns, distributions = [] }) {
     const { props } = usePage();
+
+    const [paymentProofs, setPaymentProofs] = React.useState({});
+    const [paymentProcessing, setPaymentProcessing] = React.useState(null);
 
     const {
         data,
@@ -45,7 +51,6 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
         expense_category: '',
         description: '',
         amount: '',
-        receipt: null,
     });
 
     function submitExpense(e) {
@@ -56,6 +61,36 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
             preserveScroll: true,
             onSuccess: () => reset(),
         });
+    }
+
+    function submitPayment(e, expenseId) {
+        e.preventDefault();
+    
+        const proof = paymentProofs[expenseId];
+    
+        if (!proof) {
+            return;
+        }
+    
+        setPaymentProcessing(expenseId);
+    
+        router.post(
+            `/admin/pengeluaran/${expenseId}/bayar`,
+            { proof },
+            {
+                forceFormData: true,
+                preserveScroll: true,
+                onSuccess: () => {
+                    setPaymentProofs((prev) => ({
+                        ...prev,
+                        [expenseId]: null,
+                    }));
+                },
+                onFinish: () => {
+                    setPaymentProcessing(null);
+                },
+            }
+        );
     }
 
     return (
@@ -311,52 +346,14 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                     )}
                                 </div>
 
-                                <div className="ad-expense-field">
-                                    <label htmlFor="expense-receipt">
-                                        Bukti nota / transaksi
-                                    </label>
-
-                                    <label
-                                        className="ad-expense-upload"
-                                        htmlFor="expense-receipt"
-                                    >
-                                        <Upload size={23} />
-                                        <strong>
-                                            {data.receipt
-                                                ? data.receipt.name
-                                                : 'Pilih file bukti'}
-                                        </strong>
-                                        <span>
-                                            JPG, PNG, atau PDF. Maksimal 5 MB.
-                                        </span>
-                                    </label>
-
-                                    <input
-                                        id="expense-receipt"
-                                        type="file"
-                                        accept=".jpg,.jpeg,.png,.pdf"
-                                        className="ad-expense-file-input"
-                                        onChange={(e) =>
-                                            setData(
-                                                'receipt',
-                                                e.target.files[0] || null
-                                            )
-                                        }
-                                    />
-
-                                    {errors.receipt && (
-                                        <small className="ad-expense-error">
-                                            {errors.receipt}
-                                        </small>
-                                    )}
-                                </div>
+                        
 
                                 <div className="ad-expense-notice">
                                     <ShieldCheck size={19} />
                                     <span>
-                                        Pengajuan akan berstatus Menunggu. Dana
-                                        baru mengurangi saldo setelah disetujui
-                                        Superadmin.
+                                        Pengajuan akan diperiksa oleh Superadmin.
+                                        Setelah disetujui dan dibayarkan, Admin wajib
+                                        mengunggah bukti pembayaran.
                                     </span>
                                 </div>
 
@@ -383,13 +380,10 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
 
                                 <ol>
                                     <li>Admin mengisi pengajuan biaya.</li>
-                                    <li>Pengajuan masuk ke daftar Superadmin.</li>
-                                    <li>
-                                        Superadmin memeriksa nominal dan bukti.
-                                    </li>
-                                    <li>
-                                        Status berubah setelah keputusan dibuat.
-                                    </li>
+                                    <li>Pengajuan diperiksa oleh Superadmin.</li>
+                                    <li>Superadmin menyetujui atau menolak pengajuan.</li>
+                                    <li>Admin melakukan pembayaran dan mengunggah bukti.</li>
+                                    <li>Sistem mencatat realisasi pembayaran.</li>
                                 </ol>
                             </div>
 
@@ -401,8 +395,8 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                 <h3>Ketentuan bukti</h3>
 
                                 <p>
-                                    Sertakan foto nota atau dokumen transaksi
-                                    yang jelas agar pengajuan lebih mudah diperiksa.
+                                    Bukti nota atau transaksi wajib diunggah setelah
+                                    pengeluaran benar-benar dibayarkan.
                                 </p>
                             </div>
                         </section>
@@ -456,14 +450,14 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                                         {expense.description}
                                                     </small>
 
-                                                    {expense.receipt_file && (
+                                                    {expense.payment_status === 'paid' && expense.receipt_file && (
                                                         <a
-                                                            href={`/storage/${expense.receipt_file}`}
+                                                            href={`/admin/pengeluaran/${expense.id}/bukti-pembayaran`}
                                                             target="_blank"
                                                             rel="noreferrer"
                                                             className="ad-expense-receipt-link"
                                                         >
-                                                            Lihat bukti
+                                                            Lihat bukti pembayaran
                                                         </a>
                                                     )}
                                                 </td>
@@ -487,26 +481,64 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                                 </td>
 
                                                 <td>
-                                                    <span
-                                                        className={`ad-expense-status ${expense.approval_status}`}
-                                                    >
-                                                        {statusLabel[
-                                                            expense.approval_status
-                                                        ] || expense.approval_status}
-                                                    </span>
+                                                    <div className="ad-expense-status-wrapper">
+                                                        <span
+                                                            className={`ad-expense-status ${expense.approval_status}`}
+                                                        >
+                                                            {statusLabel[expense.approval_status] ||
+                                                                expense.approval_status}
+                                                        </span>
 
-                                                    {expense.approval_status ===
-                                                        'rejected' &&
-                                                        expense.rejection_reason && (
-                                                            <div className="ad-expense-rejection-reason">
-                                                                <strong>
-                                                                    Alasan penolakan:
-                                                                </strong>
-                                                                <p>
-                                                                    {expense.rejection_reason}
-                                                                </p>
-                                                            </div>
+                                                        {expense.approval_status === 'approved' && (
+                                                            <>
+                                                                <small>
+                                                                    Pembayaran:{' '}
+                                                                    {paymentStatusLabel[
+                                                                        expense.payment_status || 'unpaid'
+                                                                    ] || 'Belum Dibayar'}
+                                                                </small>
+
+                                                                {expense.payment_status !== 'paid' && (
+                                                                    <form
+                                                                        onSubmit={(e) =>
+                                                                            submitPayment(e, expense.id)
+                                                                        }
+                                                                        className="ad-expense-payment-form"
+                                                                    >
+                                                                        <input
+                                                                            type="file"
+                                                                            accept=".jpg,.jpeg,.png,.pdf"
+                                                                            onChange={(e) =>
+                                                                                setPaymentProofs((prev) => ({
+                                                                                    ...prev,
+                                                                                    [expense.id]: e.target.files?.[0] || null,
+                                                                                }))
+                                                                            }
+                                                                            required
+                                                                        />
+
+                                                                        <button
+                                                                            type="submit"
+                                                                            disabled={
+                                                                                paymentProcessing === expense.id ||
+                                                                                !paymentProofs[expense.id]
+                                                                            }
+                                                                        >
+                                                                            {paymentProcessing === expense.id
+                                                                                ? 'Mengunggah...'
+                                                                                : 'Catat Pembayaran'}
+                                                                        </button>
+
+                                                                        {props.errors?.proof && (
+                                                                            <small className="ad-expense-error">
+                                                                                {props.errors.proof}
+                                                                            </small>
+                                                                        )}
+                                                                    </form>
+                                                                )}
+                                                            </>
                                                         )}
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))

@@ -20,18 +20,22 @@ class Expense extends Model
         'is_simulated',
         'receipt_file',
         'approval_status',
+        'payment_status',
+        'paid_at',
+        'paid_by',
         'submitted_by',
         'approved_by',
         'rejection_reason',
     ];
 
     protected function casts(): array
-    {
-        return [
-            'amount' => 'integer',
-            'is_simulated' => 'boolean',
-        ];
-    }
+{
+    return [
+        'amount' => 'integer',
+        'is_simulated' => 'boolean',
+        'paid_at' => 'datetime',
+    ];
+}
 
     public function campaign(): BelongsTo
     {
@@ -52,4 +56,9 @@ class Expense extends Model
     {
         return $this->belongsTo(User::class, 'approved_by');
     }
+
+    public function payer(): BelongsTo
+{
+    return $this->belongsTo(User::class, 'paid_by');
+}
 }

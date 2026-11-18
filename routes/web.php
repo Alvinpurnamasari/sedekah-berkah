@@ -254,6 +254,18 @@ Route::middleware('role:admin')
             'store'
         ])->middleware('role:admin')->name('admin.expenses.store');
 
+        // Pencatatan pembayaran pengeluaran oleh Admin
+        Route::post('/admin/pengeluaran/{id}/bayar', [
+            \App\Http\Controllers\Admin\ExpenseController::class,
+            'recordPayment'
+        ])->middleware('role:admin')->name('admin.expenses.payment');
+
+        // Melihat bukti pembayaran pengeluaran
+        Route::get('/admin/pengeluaran/{id}/bukti-pembayaran', [
+            \App\Http\Controllers\Admin\ExpenseController::class,
+            'paymentProof'
+        ])->middleware('role:admin')->name('admin.expenses.payment-proof');
+
         // Penyaluran dana oleh Admin
         Route::middleware('role:admin')
         ->prefix('admin/penyaluran')

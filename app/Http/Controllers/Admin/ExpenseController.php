@@ -7,11 +7,11 @@ use App\Models\Expense;
 use App\Models\Campaign;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use App\Models\Distribution;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class ExpenseController extends Controller
 {
@@ -57,10 +57,9 @@ public function store(Request $request)
         'expense_category' => ['required', 'string', 'max:100'],
         'description' => ['required', 'string', 'max:1000'],
         'amount' => ['required', 'integer', 'min:1000', 'max:100000000'],
-        'receipt' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf', 'max:5120'],
     ]);
 
-    DB::transaction(function () use ($data, $request) {
+    DB::transaction(function () use ($data) {
         $distribution = null;
 
         if ($data['expense_type'] === 'distribution_detail') {
@@ -91,13 +90,6 @@ public function store(Request $request)
             }
         }
 
-        $receiptPath = null;
-
-        if ($request->hasFile('receipt')) {
-            $receiptPath = $request->file('receipt')
-                ->store('expense-receipts', 'public');
-        }
-
         Expense::create([
             'expense_type' => $data['expense_type'],
             'distribution_id' => $distribution?->id,
@@ -109,7 +101,6 @@ public function store(Request $request)
             'expense_category' => $data['expense_category'],
             'description' => $data['description'],
             'amount' => $data['amount'],
-            'receipt_file' => $receiptPath,
 
             'is_simulated' => $distribution
                 ? (bool) $distribution->is_simulated
@@ -123,6 +114,101 @@ public function store(Request $request)
     return back()->with(
         'success',
         'Pengajuan pengeluaran berhasil dikirim untuk persetujuan Superadmin.'
+    );
+}
+/**
+ * Mencatat pembayaran pengeluaran oleh Admin.
+ */
+public function recordPayment(Request $request, $id)
+{
+    $request->validate([
+        'proof' => [
+            'required',
+            'file',
+            'mimes:jpg,jpeg,png,pdf',
+            'max:5120',
+        ],
+    ], [
+        'proof.required' => 'Bukti pembayaran wajib diunggah.',
+        'proof.mimes' => 'Bukti harus berupa JPG, JPEG, PNG, atau PDF.',
+        'proof.max' => 'Ukuran bukti maksimal 5 MB.',
+    ]);
+
+    $proofPath = null;
+
+    try {
+        DB::transaction(function () use ($request, $id, &$proofPath) {
+            $expense = Expense::where('id', $id)
+                ->where('submitted_by', Auth::id())
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($expense->approval_status !== 'approved') {
+                throw ValidationException::withMessages([
+                    'proof' => 'Pengeluaran harus disetujui Superadmin sebelum pembayaran dicatat.',
+                ]);
+            }
+
+            if (($expense->payment_status ?? 'unpaid') !== 'unpaid') {
+                throw ValidationException::withMessages([
+                    'proof' => 'Pembayaran pengeluaran ini sudah pernah dicatat.',
+                ]);
+            }
+
+            // Simpan bukti pada private local storage.
+            $proofPath = Storage::disk('local')->putFile(
+                'expense-payment-proofs',
+                $request->file('proof')
+            );
+
+            if (!$proofPath) {
+                throw new \RuntimeException(
+                    'Gagal menyimpan bukti pembayaran.'
+                );
+            }
+
+            $expense->update([
+                'receipt_file' => $proofPath,
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+                'paid_by' => Auth::id(),
+            ]);
+        });
+    } catch (\Throwable $e) {
+        // Hapus file jika transaksi database gagal.
+        if ($proofPath) {
+            Storage::disk('local')->delete($proofPath);
+        }
+
+        throw $e;
+    }
+
+    return back()->with(
+        'success',
+        'Pembayaran pengeluaran berhasil dicatat.'
+    );
+}
+
+
+/**
+ * Menampilkan bukti pembayaran secara privat.
+ */
+public function paymentProof($id)
+{
+    $expense = Expense::where('id', $id)
+        ->where('submitted_by', Auth::id())
+        ->firstOrFail();
+
+    if (
+        $expense->payment_status !== 'paid' ||
+        !$expense->receipt_file ||
+        !Storage::disk('local')->exists($expense->receipt_file)
+    ) {
+        abort(404, 'Bukti pembayaran tidak ditemukan.');
+    }
+
+    return Storage::disk('local')->response(
+        $expense->receipt_file
     );
 }
 
