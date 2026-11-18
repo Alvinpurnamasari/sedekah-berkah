@@ -113,6 +113,11 @@ public function reverse(
     ?string $userId = null,
     ?string $reason = null
 ): JournalEntry {
+    if (!$reason || trim($reason) === '') {
+        throw ValidationException::withMessages([
+            'reason' => 'Alasan pembalikan jurnal wajib diisi.',
+        ]);
+    }
     return DB::transaction(function () use ($entry, $userId, $reason) {
 
         // Kunci jurnal asal agar tidak dibalik bersamaan.
@@ -147,13 +152,19 @@ public function reverse(
                 'journal' => 'Jurnal asal tidak seimbang dan tidak dapat dibalik.',
             ]);
         }
+        
+        $this->validateAccounts(
+            $original->lines->map(fn ($line) => [
+                'ledger_account_id' => $line->ledger_account_id,
+            ])->all()
+        );
 
         $reversal = JournalEntry::create([
             'journal_number' => 'SBJ-' . now()->format('YmdHis')
                 . '-' . strtoupper(Str::random(6)),
             'entry_date' => now()->toDateString(),
             'description' => 'Pembalikan jurnal ' . $original->journal_number
-                . ($reason ? '. Alasan: ' . $reason : ''),
+                . '. Alasan: ' . trim($reason),
             'source_type' => 'journal_reversal',
             'source_id' => $original->id,
             'status' => 'draft',
