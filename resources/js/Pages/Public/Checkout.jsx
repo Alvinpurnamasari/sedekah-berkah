@@ -66,6 +66,11 @@ export default function Checkout({
     const [busy, setBusy] = useState(false);
     const [result, setResult] = useState(null);
 
+    // Upload bukti transfer
+const [proofFile, setProofFile] = useState(null);
+const [proofBusy, setProofBusy] = useState(false);
+const [proofMessage, setProofMessage] = useState('');
+const [proofError, setProofError] = useState('');
     // Status salin nomor rekening
     const [copiedAccountId, setCopiedAccountId] = useState(null);
 
@@ -221,6 +226,62 @@ export default function Checkout({
         }
     }
 
+    // Upload bukti transfer
+async function uploadTransferProof(event) {
+    event.preventDefault();
+
+    if (!result || !proofFile) {
+        setProofError('Silakan pilih foto bukti transfer terlebih dahulu.');
+        return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png'];
+
+    if (!allowedTypes.includes(proofFile.type)) {
+        setProofError('Format file harus JPG, JPEG, atau PNG.');
+        return;
+    }
+
+    if (proofFile.size > 2 * 1024 * 1024) {
+        setProofError('Ukuran file maksimal 2 MB.');
+        return;
+    }
+
+    setProofBusy(true);
+    setProofError('');
+    setProofMessage('');
+
+    try {
+        const formData = new FormData();
+        formData.append('proof', proofFile);
+
+        const response = await axios.post(
+            `/api/v1/donations/${encodeURIComponent(result.donation_code)}/proof`,
+            formData
+        );
+
+        setProofMessage(
+            response.data.message || 'Bukti transfer berhasil diunggah.'
+        );
+
+        setProofFile(null);
+    } catch (err) {
+        const validationErrors = err.response?.data?.errors;
+
+        const firstError = validationErrors
+            ? Object.values(validationErrors).flat()[0]
+            : null;
+
+        setProofError(
+            firstError ||
+            err.response?.data?.message ||
+            'Bukti transfer gagal diunggah. Silakan coba kembali.'
+        );
+    } finally {
+        setProofBusy(false);
+    }
+}
+
     // Tampilan loading
     if (loading) {
         return (
@@ -345,6 +406,64 @@ export default function Checkout({
                             Donasi akan diverifikasi oleh pengelola setelah
                             pembayaran diterima.
                         </p>
+                        {/* UPLOAD BUKTI TRANSFER */}
+                            <div className="transfer-proof-section">
+                                <h3>Konfirmasi Pembayaran</h3>
+
+                                <p>
+                                    Setelah melakukan transfer, silakan unggah
+                                    bukti pembayaran Anda.
+                                </p>
+
+                                <form onSubmit={uploadTransferProof}>
+                                    <label className="checkout-label">
+                                        Foto bukti transfer
+
+                                        <input
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                            onChange={(event) => {
+                                                setProofFile(event.target.files?.[0] || null);
+                                                setProofError('');
+                                                setProofMessage('');
+                                            }}
+                                            disabled={proofBusy}
+                                        />
+                                    </label>
+
+                                    {proofFile && (
+                                        <p>
+                                            File dipilih: <strong>{proofFile.name}</strong>
+                                        </p>
+                                    )}
+
+                                    {proofError && (
+                                        <p role="alert" style={{ color: '#dc2626' }}>
+                                            {proofError}
+                                        </p>
+                                    )}
+
+                                    {proofMessage && (
+                                        <p role="status" style={{ color: '#15803d' }}>
+                                            {proofMessage}
+                                        </p>
+                                    )}
+
+                                    <button
+                                        type="submit"
+                                        className="checkout-primary"
+                                        disabled={!proofFile || proofBusy}
+                                    >
+                                        {proofBusy
+                                            ? 'Mengunggah...'
+                                            : 'Unggah Bukti Transfer'}
+                                    </button>
+
+                                    <small>
+                                        Format JPG, JPEG, atau PNG. Maksimal 2 MB.
+                                    </small>
+                                </form>
+                            </div>
 
                         <Link
                             href="/program"

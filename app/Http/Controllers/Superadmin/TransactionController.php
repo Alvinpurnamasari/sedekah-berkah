@@ -6,6 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
+use App\Models\AuditLog;
+use App\Models\JournalEntry;
+use App\Models\PaymentStatusHistory;
+use App\Services\Finance\JournalService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class TransactionController extends Controller
 {
@@ -154,11 +161,24 @@ class TransactionController extends Controller
                 'donations.is_simulated',
                 'donations.created_at as donation_date',
                 'campaigns.title as campaign_title',
-                'beneficiary_targets.name as beneficiary_name'
+                'beneficiary_targets.name as beneficiary_name',
+                'donations.transfer_proof',
+                'donations.proof_status',
+                'donations.proof_uploaded_at',
+                'donations.verified_by',
+                'donations.verified_at',
+                'donations.verification_note',
+                'donations.bank_name',
+                'donations.bank_account_number',
+                'donations.bank_account_holder'
             )
             ->first();
     
         abort_if(!$transaction, 404);
+    
+        $transaction->verifier_name = DB::table('users')
+            ->where('id', $transaction->verified_by)
+            ->value('name');
     
         // Ambil informasi transaksi gateway terbaru.
         $payment = DB::table('payment_transactions')
@@ -179,4 +199,348 @@ class TransactionController extends Controller
         ]);
     }
     
+
+public function proof(string $id)
+{
+    $donation = DB::table('donations')
+        ->where('id', $id)
+        ->first(['id', 'transfer_proof']);
+
+    abort_if(!$donation || !$donation->transfer_proof, 404);
+
+    $disk = Storage::disk('local');
+
+    abort_unless(
+        $disk->exists($donation->transfer_proof),
+        404
+    );
+
+    return $disk->response(
+        $donation->transfer_proof
+    );
+}
+/**
+ * Menyetujui bukti transfer manual dan membuat jurnal.
+ */
+public function approveProof(
+    Request $request,
+    string $id,
+    JournalService $journalService
+) {
+    DB::transaction(function () use ($request, $id, $journalService) {
+
+        $userId = Auth::id();
+
+        // Kunci data donasi agar tidak diproses bersamaan.
+        $donation = DB::table('donations')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$donation) {
+            abort(404);
+        }
+
+        if (
+            $donation->payment_status !== 'pending' ||
+            $donation->proof_status !== 'pending'
+        ) {
+            throw ValidationException::withMessages([
+                'proof' => 'Donasi ini tidak sedang menunggu verifikasi bukti transfer.',
+            ]);
+        }
+
+        if (
+            empty($donation->transfer_proof) ||
+            !Storage::disk('local')->exists($donation->transfer_proof)
+        ) {
+            throw ValidationException::withMessages([
+                'proof' => 'File bukti transfer tidak ditemukan.',
+            ]);
+        }
+
+        if ((bool) $donation->is_simulated) {
+            throw ValidationException::withMessages([
+                'proof' => 'Donasi simulasi tidak dapat diverifikasi sebagai pembayaran nyata.',
+            ]);
+        }
+
+        $donationAmount = (int) $donation->donation_amount;
+        $operationalSupport = (int) $donation->operational_support;
+        $totalAmount = $donationAmount + $operationalSupport;
+
+        if ($donationAmount <= 0 || $operationalSupport < 0) {
+            throw ValidationException::withMessages([
+                'proof' => 'Nominal donasi tidak valid.',
+            ]);
+        }
+
+        // Ambil dan kunci transaksi pembayaran manual.
+        $payment = DB::table('payment_transactions')
+            ->where('donation_id', $id)
+            ->where('provider', 'manual_bank_transfer')
+            ->orderByDesc('created_at')
+            ->lockForUpdate()
+            ->first();
+
+        if (!$payment || $payment->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'proof' => 'Transaksi pembayaran manual tidak ditemukan atau sudah diproses.',
+            ]);
+        }
+
+        if (
+            (int) $payment->gross_amount !== $totalAmount ||
+            (int) $payment->gateway_fee !== 0
+        ) {
+            throw ValidationException::withMessages([
+                'proof' => 'Nominal transaksi tidak sesuai dengan data donasi.',
+            ]);
+        }
+
+        // Pastikan jurnal untuk donasi ini belum pernah dibuat.
+        $existingJournal = JournalEntry::where(
+            'source_type',
+            'donation_manual_transfer'
+        )
+            ->where('source_id', $id)
+            ->exists();
+
+        if ($existingJournal) {
+            throw ValidationException::withMessages([
+                'proof' => 'Jurnal untuk donasi ini sudah pernah dibuat.',
+            ]);
+        }
+
+        // Ambil kampanye dan akun buku besarnya.
+        $campaign = DB::table('campaigns')
+            ->where('id', $donation->campaign_id)
+            ->first();
+
+        if (!$campaign || !$campaign->ledger_account_id) {
+            throw ValidationException::withMessages([
+                'proof' => 'Kampanye belum memiliki akun buku besar. Pemetaan akun harus diselesaikan terlebih dahulu.',
+            ]);
+        }
+
+        $programAccount = DB::table('ledger_accounts')
+            ->where('id', $campaign->ledger_account_id)
+            ->where('is_active', true)
+            ->where('fund_group', 'program')
+            ->first();
+
+        if (!$programAccount) {
+            throw ValidationException::withMessages([
+                'proof' => 'Akun buku besar program tidak ditemukan atau tidak aktif.',
+            ]);
+        }
+
+        // Akun rekening bank 1002.
+        $bankAccount = DB::table('ledger_accounts')
+            ->where('code', '1002')
+            ->where('is_active', true)
+            ->first();
+
+        if (!$bankAccount) {
+            throw ValidationException::withMessages([
+                'proof' => 'Akun Rekening Bank (1002) tidak ditemukan atau tidak aktif.',
+            ]);
+        }
+
+        // Susun baris jurnal.
+        $lines = [
+            [
+                'ledger_account_id' => $bankAccount->id,
+                'description' => 'Penerimaan transfer donasi ' . $donation->donation_code,
+                'debit' => $totalAmount,
+                'credit' => 0,
+            ],
+            [
+                'ledger_account_id' => $programAccount->id,
+                'description' => 'Penerimaan dana program ' . $campaign->title,
+                'debit' => 0,
+                'credit' => $donationAmount,
+            ],
+        ];
+
+        // Jika ada dukungan operasional, masukkan ke akun 3101.
+        if ($operationalSupport > 0) {
+            $operationalAccount = DB::table('ledger_accounts')
+                ->where('code', '3101')
+                ->where('is_active', true)
+                ->first();
+
+            if (!$operationalAccount) {
+                throw ValidationException::withMessages([
+                    'proof' => 'Akun Dana Operasional (3101) tidak ditemukan atau tidak aktif.',
+                ]);
+            }
+
+            $lines[] = [
+                'ledger_account_id' => $operationalAccount->id,
+                'description' => 'Penerimaan dukungan operasional',
+                'debit' => 0,
+                'credit' => $operationalSupport,
+            ];
+        }
+
+        // Buat dan posting jurnal.
+        $journal = $journalService->createDraft([
+            'entry_date' => now()->toDateString(),
+            'description' => 'Verifikasi transfer donasi ' . $donation->donation_code,
+            'source_type' => 'donation_manual_transfer',
+            'source_id' => $donation->id,
+            'lines' => $lines,
+        ], $userId);
+
+        $postedJournal = $journalService->post($journal, $userId);
+
+        // Perbarui status donasi setelah jurnal berhasil diposting.
+        DB::table('donations')
+            ->where('id', $id)
+            ->update([
+                'payment_status' => 'paid',
+                'proof_status' => 'approved',
+                'verified_by' => $userId,
+                'verified_at' => now(),
+                'verification_note' => null,
+                'updated_at' => now(),
+            ]);
+
+        // Perbarui transaksi pembayaran.
+        DB::table('payment_transactions')
+            ->where('id', $payment->id)
+            ->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'payment_method' => $payment->payment_method ?: 'bank_transfer',
+                'updated_at' => now(),
+            ]);
+
+        // Catat perubahan status pembayaran.
+        PaymentStatusHistory::create([
+            'donation_id' => $id,
+            'old_status' => 'pending',
+            'new_status' => 'paid',
+            'provider_status' => 'manual_superadmin_verified',
+            'transaction_id' => $payment->transaction_id,
+            'payment_method' => $payment->payment_method ?: 'bank_transfer',
+            'metadata' => [
+                'verified_by' => $userId,
+                'journal_id' => $postedJournal->id,
+                'journal_number' => $postedJournal->journal_number,
+            ],
+        ]);
+
+        // Catat aktivitas Superadmin.
+        AuditLog::create([
+            'user_id' => $userId,
+            'action' => 'donation.manual_transfer_verified',
+            'entity_type' => \App\Models\Donation::class,
+            'entity_id' => $id,
+            'metadata' => [
+                'donation_code' => $donation->donation_code,
+                'donation_amount' => $donationAmount,
+                'operational_support' => $operationalSupport,
+                'journal_id' => $postedJournal->id,
+                'journal_number' => $postedJournal->journal_number,
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.transactions.show', $id)
+        ->with('success', 'Bukti transfer berhasil diverifikasi dan jurnal berhasil diposting.');
+}
+
+/**
+ * Menolak bukti transfer manual.
+ */
+public function rejectProof(Request $request, string $id)
+{
+    $data = $request->validate([
+        'reason' => ['required', 'string', 'max:1000'],
+    ]);
+
+    DB::transaction(function () use ($request, $id, $data) {
+
+        $userId = Auth::id();
+
+        $donation = DB::table('donations')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$donation) {
+            abort(404);
+        }
+
+        if (
+            $donation->payment_status !== 'pending' ||
+            $donation->proof_status !== 'pending'
+        ) {
+            throw ValidationException::withMessages([
+                'proof' => 'Bukti transfer ini tidak sedang menunggu pemeriksaan.',
+            ]);
+        }
+
+        if (
+            empty($donation->transfer_proof) ||
+            !Storage::disk('local')->exists($donation->transfer_proof)
+        ) {
+            throw ValidationException::withMessages([
+                'proof' => 'File bukti transfer tidak ditemukan.',
+            ]);
+        }
+
+        if ((bool) $donation->is_simulated) {
+            throw ValidationException::withMessages([
+                'proof' => 'Donasi simulasi tidak dapat diproses melalui verifikasi transfer.',
+            ]);
+        }
+
+        $payment = DB::table('payment_transactions')
+            ->where('donation_id', $id)
+            ->where('provider', 'manual_bank_transfer')
+            ->orderByDesc('created_at')
+            ->lockForUpdate()
+            ->first();
+
+        if (!$payment || $payment->status !== 'pending') {
+            throw ValidationException::withMessages([
+                'proof' => 'Transaksi pembayaran manual tidak ditemukan atau sudah diproses.',
+            ]);
+        }
+
+        // Penolakan tidak mengubah status pembayaran menjadi paid.
+        DB::table('donations')
+            ->where('id', $id)
+            ->update([
+                'proof_status' => 'rejected',
+                'verified_by' => $userId,
+                'verified_at' => now(),
+                'verification_note' => trim($data['reason']),
+                'updated_at' => now(),
+            ]);
+
+        // Catat aktivitas penolakan.
+        AuditLog::create([
+            'user_id' => $userId,
+            'action' => 'donation.manual_transfer_rejected',
+            'entity_type' => \App\Models\Donation::class,
+            'entity_id' => $id,
+            'metadata' => [
+                'donation_code' => $donation->donation_code,
+                'reason' => trim($data['reason']),
+                'proof_path' => $donation->transfer_proof,
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+    });
+
+    return redirect()
+        ->route('superadmin.transactions.show', $id)
+        ->with('success', 'Bukti transfer berhasil ditolak.');
+}
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Campaign extends Model
 {
@@ -37,6 +38,8 @@ class Campaign extends Model
         'approved_by',
         'approved_at',
         'rejection_reason',
+
+        'ledger_account_id',
     ];
 
     protected $casts = [
@@ -74,5 +77,10 @@ class Campaign extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function ledgerAccount(): BelongsTo
+    {
+    return $this->belongsTo(LedgerAccount::class);
     }
 }

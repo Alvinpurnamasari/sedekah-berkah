@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Donation extends Model
 {
@@ -27,12 +28,20 @@ class Donation extends Model
         'bank_name',
         'bank_account_number',
         'bank_account_holder',
+        'transfer_proof',
+        'proof_status',
+        'proof_uploaded_at',
+        'verified_by',
+        'verified_at',
+        'verification_note',
     ];
 
     protected $casts = [
         'is_anonymous' => 'boolean',
         'donation_amount' => 'integer',
         'operational_support' => 'integer',
+        'proof_uploaded_at' => 'datetime',
+        'verified_at' => 'datetime',
     ];
 
     public function campaign()
@@ -51,4 +60,14 @@ class Donation extends Model
             'donation_account_id'
         );
     }
+
+    public function verifier()
+{
+    return $this->belongsTo(User::class, 'verified_by');
+}
+public function paymentStatusHistories(): HasMany
+{
+    return $this->hasMany(PaymentStatusHistory::class)
+        ->latest();
+}
 }

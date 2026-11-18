@@ -39,7 +39,11 @@ const statusLabels = {
     failed: 'Gagal',
     expired: 'Kedaluwarsa',
 };
-
+const proofStatusLabels = {
+    pending: 'Menunggu pemeriksaan',
+    approved: 'Disetujui',
+    rejected: 'Ditolak',
+};
 const statusIcons = {
     paid: CheckCircle,
     pending: Clock,
@@ -198,6 +202,199 @@ export default function TransactionShow({
                         </div>
                     </div>
                 </section>
+
+                {/* BUKTI TRANSFER */}
+                <section className="st-panel" style={{ marginTop: 24 }}>
+                    <div className="st-panel-heading">
+                        <div>
+                            <h2>
+                                <Receipt
+                                    size={20}
+                                    style={{
+                                        marginRight: 8,
+                                        verticalAlign: 'middle',
+                                    }}
+                                />
+                                Bukti Transfer
+                            </h2>
+                            <p>
+                                Bukti pembayaran yang diunggah oleh donatur.
+                            </p>
+                        </div>
+
+                        <span className={`st-status ${transaction.proof_status === 'approved' ? 'paid' : transaction.proof_status === 'rejected' ? 'failed' : 'pending'}`}>
+                            {proofStatusLabels[transaction.proof_status] || 'Belum tersedia'}
+                        </span>
+                    </div>
+
+                    <div className="st-detail-list">
+                        <div>
+                            <span>Bank tujuan</span>
+                            <strong>{transaction.bank_name || '-'}</strong>
+                        </div>
+
+                        <div>
+                            <span>Nomor rekening</span>
+                            <strong>{transaction.bank_account_number || '-'}</strong>
+                        </div>
+
+                        <div>
+                            <span>Nama pemilik rekening</span>
+                            <strong>{transaction.bank_account_holder || '-'}</strong>
+                        </div>
+
+                        <div>
+                            <span>Waktu unggah bukti</span>
+                            <strong>{dateFormat(transaction.proof_uploaded_at)}</strong>
+                        </div>
+
+                        <div>
+                            <span>Waktu verifikasi</span>
+                            <strong>{dateFormat(transaction.verified_at)}</strong>
+                        </div>
+
+                        <div>
+                            <span>Diperiksa oleh</span>
+                            <strong>{transaction.verifier_name || '-'}</strong>
+                        </div>
+
+                        {transaction.verification_note && (
+                            <div className="st-message">
+                                <span>Catatan pemeriksaan</span>
+                                <strong>{transaction.verification_note}</strong>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ padding: '20px 25px' }}>
+                        {transaction.transfer_proof ? (
+                            <div>
+                                <p style={{ marginBottom: 12, fontWeight: 600 }}>
+                                    Gambar bukti transfer
+                                </p>
+
+                                <a
+                                    href={`/superadmin/transaksi/${transaction.id}/bukti`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <img
+                                        src={`/superadmin/transaksi/${transaction.id}/bukti`}
+                                        alt="Bukti transfer donatur"
+                                        style={{
+                                            display: 'block',
+                                            width: '100%',
+                                            maxWidth: 520,
+                                            maxHeight: 500,
+                                            objectFit: 'contain',
+                                            borderRadius: 12,
+                                            border: '1px solid #e5e7eb',
+                                            cursor: 'pointer',
+                                        }}
+                                    />
+                                </a>
+
+                                <small style={{ display: 'block', marginTop: 10, color: '#64748b' }}>
+                                    Klik gambar untuk melihat ukuran penuh.
+                                </small>
+                            </div>
+                        ) : (
+                            <div className="st-empty">
+                                Donatur belum mengunggah bukti transfer.
+                            </div>
+                        )}
+                    </div>
+                    {transaction.transfer_proof &&
+                transaction.payment_status === 'pending' &&
+                transaction.proof_status === 'pending' && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 12,
+                            padding: '0 25px 24px',
+                        }}
+                    >
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const confirmed = window.confirm(
+                                    'Apakah Anda yakin ingin menyetujui bukti transfer ini? Transaksi akan ditandai berhasil dan jurnal keuangan akan dibuat.'
+                                );
+
+                                if (confirmed) {
+                                    router.post(
+                                        `/superadmin/transaksi/${transaction.id}/setujui-bukti`,
+                                        {},
+                                        {
+                                            preserveScroll: true,
+                                        }
+                                    );
+                                }
+                            }}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '11px 18px',
+                                border: 'none',
+                                borderRadius: 8,
+                                background: '#16a34a',
+                                color: '#fff',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <CheckCircle size={17} />
+                            Setujui Bukti
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const reason = window.prompt(
+                                    'Masukkan alasan penolakan bukti transfer:'
+                                );
+
+                                if (reason === null) return;
+
+                                if (!reason.trim()) {
+                                    window.alert(
+                                        'Alasan penolakan wajib diisi.'
+                                    );
+                                    return;
+                                }
+
+                                router.post(
+                                    `/superadmin/transaksi/${transaction.id}/tolak-bukti`,
+                                    {
+                                        reason: reason.trim(),
+                                    },
+                                    {
+                                        preserveScroll: true,
+                                    }
+                                );
+                            }}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '11px 18px',
+                                border: 'none',
+                                borderRadius: 8,
+                                background: '#dc2626',
+                                color: '#fff',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <XCircle size={17} />
+                            Tolak Bukti
+                        </button>
+                    </div>
+                )}
+                </section>
+
 
                 {/* INFORMASI PEMBAYARAN */}
                 <section className="st-panel" style={{ marginTop: 24 }}>

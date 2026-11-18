@@ -425,6 +425,15 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
     Route::get('/transaksi/{id}', [TransactionController::class, 'show'])
         ->name('transactions.show');
 
+    Route::get('/transaksi/{id}/bukti', [TransactionController::class, 'proof'])
+        ->name('transactions.proof');
+
+    Route::post('/transaksi/{id}/setujui-bukti', [ TransactionController::class,'approveProof'
+        ])->name('transactions.approve-proof');
+        
+    Route::post('/transaksi/{id}/tolak-bukti', [ TransactionController::class, 'rejectProof'
+        ])->name('transactions.reject-proof');
+
         // Rekonsiliasi transaksi
 Route::get('/rekonsiliasi', [
     \App\Http\Controllers\Superadmin\ReconciliationController::class,
