@@ -64,7 +64,6 @@ export default function Show({
         errors,
     } = useForm({
         actual_quantity: distribution.actual_quantity || 0,
-        total_cost: distribution.total_cost || 0,
         status: distribution.status === 'completed'
             ? 'completed'
             : 'ongoing',
@@ -870,37 +869,7 @@ export default function Show({
                             )}
                         </div>
 
-                        <div style={{ marginBottom: 18 }}>
-                            <label style={{
-                                display: 'block',
-                                fontWeight: 600,
-                                marginBottom: 8,
-                            }}>
-                                Total Biaya Aktual (Rp)
-                            </label>
-
-                            <input
-                                type="number"
-                                min="0"
-                                value={data.total_cost}
-                                onChange={(e) =>
-                                    setData('total_cost', e.target.value)
-                                }
-                                style={{
-                                    width: '100%',
-                                    padding: 12,
-                                    border: '1px solid #dce7e1',
-                                    borderRadius: 8,
-                                    boxSizing: 'border-box',
-                                }}
-                            />
-
-                            {errors.total_cost && (
-                                <p style={{ color: '#dc2626', fontSize: 13 }}>
-                                    {errors.total_cost}
-                                </p>
-                            )}
-                        </div>
+                       
 
                         <div style={{ marginBottom: 20 }}>
                             <label style={{
@@ -1192,7 +1161,7 @@ export default function Show({
                     />
                     Ringkasan Pengeluaran
                 </h3>
-
+                
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -1200,14 +1169,30 @@ export default function Show({
                 }}>
                     <div>
                         <span style={{ color: '#82958c', fontSize: 13 }}>
-                            Total pengeluaran tercatat
+                            Anggaran disetujui
                         </span>
-                        <h3>{rupiah(expenseSummary.total)}</h3>
+                        <h3>{rupiah(distribution.approved_budget)}</h3>
                     </div>
 
                     <div>
                         <span style={{ color: '#82958c', fontSize: 13 }}>
-                            Disetujui
+                            Total pengeluaran dibayar
+                        </span>
+                        <h3>{rupiah(expenseSummary.paid)}</h3>
+                    </div>
+
+                    <div>
+                        <span style={{ color: '#82958c', fontSize: 13 }}>
+                            Sisa anggaran
+                        </span>
+                        <h3 style={{ color: '#16734f' }}>
+                            {rupiah(expenseSummary.remainingBudget)}
+                        </h3>
+                    </div>
+
+                    <div>
+                        <span style={{ color: '#82958c', fontSize: 13 }}>
+                            Pengajuan disetujui
                         </span>
                         <h3>{rupiah(expenseSummary.approved)}</h3>
                     </div>
@@ -1219,6 +1204,7 @@ export default function Show({
                         <h3>{rupiah(expenseSummary.pending)}</h3>
                     </div>
                 </div>
+
 
                 <p style={{
                     color: '#82958c',
@@ -1256,7 +1242,7 @@ export default function Show({
                                     background: '#f5f8f6',
                                     textAlign: 'left',
                                 }}>
-                                    {['KATEGORI', 'KETERANGAN', 'NOMINAL', 'STATUS'].map((heading) => (
+                                    {['KATEGORI', 'KETERANGAN', 'NOMINAL', 'STATUS PERSETUJUAN', 'STATUS PEMBAYARAN'].map((heading) => (
                                         <th key={heading} style={{
                                             padding: 13,
                                             fontSize: 12,
@@ -1285,6 +1271,12 @@ export default function Show({
                                         </td>
                                         <td style={{ padding: 13 }}>
                                             {expenseLabels[expense.approval_status] || expense.approval_status}
+                                        </td>
+
+                                        <td style={{ padding: 13 }}>
+                                            {expense.payment_status === 'paid'
+                                                ? 'Sudah Dibayar'
+                                                : 'Belum Dibayar'}
                                         </td>
                                     </tr>
                                 ))}

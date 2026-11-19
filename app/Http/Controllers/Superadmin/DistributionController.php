@@ -156,22 +156,39 @@ public function show(string $id)
         ->where('distribution_id', $id)
         ->orderByDesc('created_at')
         ->get();
+    
+    $realExpenses = $expenses->filter(function ($expense) {
+        return !(bool) $expense->is_simulated;
+    });
 
-        $realExpenses = $expenses->filter(function ($expense) {
-            return !(bool) $expense->is_simulated;
-        });
-        
-        $expenseSummary = [
-            'total' => (int) $realExpenses->sum('amount'),
-        
-            'approved' => (int) $realExpenses
-                ->where('approval_status', 'approved')
-                ->sum('amount'),
-        
-            'pending' => (int) $realExpenses
-                ->where('approval_status', 'pending')
-                ->sum('amount'),
-        ];
+    $paidExpenses = $realExpenses
+        ->where('approval_status', 'approved')
+        ->where('payment_status', 'paid');
+
+    $paidTotal = (int) $paidExpenses->sum('amount');
+
+    $approvedBudget = (int) ($distribution->approved_budget ?? 0);
+
+    $expenseSummary = [
+        'total' => (int) $realExpenses->sum('amount'),
+
+        'approved' => (int) $realExpenses
+            ->where('approval_status', 'approved')
+            ->sum('amount'),
+
+        'pending' => (int) $realExpenses
+            ->where('approval_status', 'pending')
+            ->sum('amount'),
+
+        'paid' => $paidTotal,
+
+        'remainingBudget' => max(0, $approvedBudget - $paidTotal),
+    ];
+
+    // Pastikan nilai biaya aktual yang dikirim ke halaman
+    // sesuai dengan pengeluaran nyata yang sudah dibayar.
+    $distribution->total_cost = $paidTotal;
+
 
     return Inertia::render('Superadmin/Distributions/Show', [
         'distribution' => $distribution,
@@ -447,7 +464,6 @@ public function saveRealization(Request $request, string $id)
 {
     $validated = $request->validate([
         'actual_quantity' => ['required', 'integer', 'min:0'],
-        'total_cost' => ['required', 'integer', 'min:0'],
         'status' => ['required', 'in:ongoing,completed'],
     ]);
 
@@ -457,18 +473,40 @@ public function saveRealization(Request $request, string $id)
             ->lockForUpdate()
             ->first();
 
-            abort_if(!$distribution, 404);
+        abort_if(!$distribution, 404);
 
-            abort_if(
-                $distribution->budget_status !== 'approved',
-                403,
-                'Realisasi belum dapat dilakukan karena anggaran belum disetujui.'
-            );
-            
-            abort_if(
-                !in_array($distribution->status, ['planned', 'ongoing']),
-                403,
-                'Realisasi tidak dapat diubah untuk kegiatan ini.'
+        abort_if(
+            (bool) $distribution->is_simulated,
+            403,
+            'Data simulasi tidak dapat dicatat sebagai realisasi keuangan.'
+        );
+
+        abort_if(
+            $distribution->budget_status !== 'approved',
+            403,
+            'Realisasi belum dapat dilakukan karena anggaran belum disetujui.'
+        );
+
+        abort_if(
+            !in_array($distribution->status, ['planned', 'ongoing']),
+            403,
+            'Realisasi tidak dapat diubah untuk kegiatan ini.'
+        );
+
+        // Hitung hanya pengeluaran nyata yang sudah disetujui dan dibayar.
+        $paidTotal = (int) DB::table('expenses')
+            ->where('distribution_id', $id)
+            ->where('approval_status', 'approved')
+            ->where('payment_status', 'paid')
+            ->where('is_simulated', false)
+            ->sum('amount');
+
+        $approvedBudget = (int) $distribution->approved_budget;
+
+        abort_if(
+            $paidTotal > $approvedBudget,
+            422,
+            'Total pengeluaran yang dibayar melebihi anggaran yang disetujui.'
         );
 
         $before = [
@@ -481,7 +519,7 @@ public function saveRealization(Request $request, string $id)
             ->where('id', $id)
             ->update([
                 'actual_quantity' => $validated['actual_quantity'],
-                'total_cost' => $validated['total_cost'],
+                'total_cost' => $paidTotal,
                 'status' => $validated['status'],
                 'updated_at' => now(),
             ]);
@@ -493,7 +531,11 @@ public function saveRealization(Request $request, string $id)
             'entity_id' => $id,
             'metadata' => json_encode([
                 'before' => $before,
-                'after' => $validated,
+                'after' => [
+                    'actual_quantity' => $validated['actual_quantity'],
+                    'total_cost' => $paidTotal,
+                    'status' => $validated['status'],
+                ],
             ]),
             'ip_address' => $request->ip(),
             'created_at' => now(),

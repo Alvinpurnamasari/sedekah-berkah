@@ -116,6 +116,7 @@ public function store(Request $request)
         'Pengajuan pengeluaran berhasil dikirim untuk persetujuan Superadmin.'
     );
 }
+
 /**
  * Mencatat pembayaran pengeluaran oleh Admin.
  */
@@ -155,7 +156,50 @@ public function recordPayment(Request $request, $id)
                 ]);
             }
 
-            // Simpan bukti pada private local storage.
+            $distribution = null;
+
+            // Jika pengeluaran terkait penyaluran, kunci dan periksa anggarannya.
+            if ($expense->distribution_id) {
+                $distribution = DB::table('distributions')
+                    ->where('id', $expense->distribution_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$distribution) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Data penyaluran tidak ditemukan.',
+                    ]);
+                }
+
+                if ($distribution->budget_status !== 'approved') {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Anggaran penyaluran belum disetujui.',
+                    ]);
+                }
+
+                // Hitung pengeluaran nyata yang sudah dibayar sebelumnya.
+                $paidBefore = (int) DB::table('expenses')
+                    ->where('distribution_id', $distribution->id)
+                    ->where('approval_status', 'approved')
+                    ->where('payment_status', 'paid')
+                    ->where('is_simulated', (bool) $distribution->is_simulated)
+                    ->sum('amount');
+
+                $paidAfter = $paidBefore + (int) $expense->amount;
+                $approvedBudget = (int) $distribution->approved_budget;
+
+                if ($paidAfter > $approvedBudget) {
+                    $remaining = max(0, $approvedBudget - $paidBefore);
+
+                    throw ValidationException::withMessages([
+                        'proof' => 'Pembayaran melebihi sisa anggaran. Sisa anggaran saat ini Rp'
+                            . number_format($remaining, 0, ',', '.')
+                            . '.',
+                    ]);
+                }
+            }
+
+            // Simpan bukti pembayaran pada private local storage.
             $proofPath = Storage::disk('local')->putFile(
                 'expense-payment-proofs',
                 $request->file('proof')
@@ -173,9 +217,26 @@ public function recordPayment(Request $request, $id)
                 'paid_at' => now(),
                 'paid_by' => Auth::id(),
             ]);
+
+            // Perbarui total biaya aktual berdasarkan pengeluaran yang sudah dibayar.
+            if ($distribution) {
+                $paidTotal = (int) DB::table('expenses')
+                    ->where('distribution_id', $distribution->id)
+                    ->where('approval_status', 'approved')
+                    ->where('payment_status', 'paid')
+                    ->where('is_simulated', (bool) $distribution->is_simulated)
+                    ->sum('amount');
+
+                DB::table('distributions')
+                    ->where('id', $distribution->id)
+                    ->update([
+                        'total_cost' => $paidTotal,
+                        'updated_at' => now(),
+                    ]);
+            }
         });
     } catch (\Throwable $e) {
-        // Hapus file jika transaksi database gagal.
+        // Hapus bukti jika transaksi database gagal.
         if ($proofPath) {
             Storage::disk('local')->delete($proofPath);
         }
