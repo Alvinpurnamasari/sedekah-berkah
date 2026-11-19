@@ -8,6 +8,7 @@ use App\Http\Controllers\CampaignController;
 use App\Http\Controllers\Superadmin\UserManagementController;
 use App\Http\Controllers\Superadmin\CampaignManagementController;
 use App\Http\Controllers\Superadmin\FinanceController;
+use App\Http\Controllers\Superadmin\AllocationController;
 use App\Http\Controllers\Superadmin\AuditLogController;
 use App\Http\Controllers\Superadmin\TransactionController;
 use App\Http\Controllers\Superadmin\DistributionController;
@@ -430,6 +431,9 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
     Route::get('/keuangan', [FinanceController::class, 'index'])
         ->name('finance.index');
+
+    Route::get('/alokasi-dana', [AllocationController::class, 'index'])
+        ->name('allocations.index');
   
     Route::get('/transaksi', [TransactionController::class, 'index'])
         ->name('transactions.index');
