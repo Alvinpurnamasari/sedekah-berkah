@@ -35,6 +35,7 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
     const { props } = usePage();
 
     const [paymentProofs, setPaymentProofs] = React.useState({});
+    const [paymentSources, setPaymentSources] = React.useState({});
     const [paymentProcessing, setPaymentProcessing] = React.useState(null);
 
     const {
@@ -67,8 +68,9 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
         e.preventDefault();
     
         const proof = paymentProofs[expenseId];
+        const paymentSource = paymentSources[expenseId];
     
-        if (!proof) {
+        if (!proof || !paymentSource) {
             return;
         }
     
@@ -76,7 +78,10 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
     
         router.post(
             `/admin/pengeluaran/${expenseId}/bayar`,
-            { proof },
+            {
+                proof,
+                payment_source: paymentSource,
+            },
             {
                 forceFormData: true,
                 preserveScroll: true,
@@ -84,6 +89,11 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                     setPaymentProofs((prev) => ({
                         ...prev,
                         [expenseId]: null,
+                    }));
+    
+                    setPaymentSources((prev) => ({
+                        ...prev,
+                        [expenseId]: '',
                     }));
                 },
                 onFinish: () => {
@@ -500,11 +510,44 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
 
                                                                 {expense.payment_status !== 'paid' && (
                                                                     <form
-                                                                        onSubmit={(e) =>
-                                                                            submitPayment(e, expense.id)
-                                                                        }
+                                                                        onSubmit={(e) => submitPayment(e, expense.id)}
                                                                         className="ad-expense-payment-form"
                                                                     >
+                                                                        <label>
+                                                                            Sumber Pembayaran *
+                                                                        </label>
+
+                                                                        <select
+                                                                            value={paymentSources[expense.id] || ''}
+                                                                            onChange={(e) =>
+                                                                                setPaymentSources((prev) => ({
+                                                                                    ...prev,
+                                                                                    [expense.id]: e.target.value,
+                                                                                }))
+                                                                            }
+                                                                            required
+                                                                        >
+                                                                            <option value="">
+                                                                                Pilih sumber pembayaran
+                                                                            </option>
+                                                                            <option value="cash">
+                                                                                Kas
+                                                                            </option>
+                                                                            <option value="bank">
+                                                                                Rekening Bank
+                                                                            </option>
+                                                                        </select>
+
+                                                                        {props.errors?.payment_source && (
+                                                                            <small className="ad-expense-error">
+                                                                                {props.errors.payment_source}
+                                                                            </small>
+                                                                        )}
+
+                                                                        <label>
+                                                                            Bukti Pembayaran *
+                                                                        </label>
+
                                                                         <input
                                                                             type="file"
                                                                             accept=".jpg,.jpeg,.png,.pdf"
@@ -517,23 +560,24 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                                                             required
                                                                         />
 
-                                                                        <button
-                                                                            type="submit"
-                                                                            disabled={
-                                                                                paymentProcessing === expense.id ||
-                                                                                !paymentProofs[expense.id]
-                                                                            }
-                                                                        >
-                                                                            {paymentProcessing === expense.id
-                                                                                ? 'Mengunggah...'
-                                                                                : 'Catat Pembayaran'}
-                                                                        </button>
-
                                                                         {props.errors?.proof && (
                                                                             <small className="ad-expense-error">
                                                                                 {props.errors.proof}
                                                                             </small>
                                                                         )}
+
+                                                                        <button
+                                                                            type="submit"
+                                                                            disabled={
+                                                                                paymentProcessing === expense.id ||
+                                                                                !paymentProofs[expense.id] ||
+                                                                                !paymentSources[expense.id]
+                                                                            }
+                                                                        >
+                                                                            {paymentProcessing === expense.id
+                                                                                ? 'Memproses pembayaran...'
+                                                                                : 'Catat Pembayaran'}
+                                                                        </button>
                                                                     </form>
                                                                 )}
                                                             </>

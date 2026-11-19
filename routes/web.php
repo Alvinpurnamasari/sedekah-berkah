@@ -521,6 +521,11 @@ Route::get('/rekonsiliasi', [
             'reject'
         ])->name('expenses.reject');
 
+        Route::get('/pengeluaran/{id}/bukti-pembayaran', [
+            \App\Http\Controllers\Superadmin\ExpenseApprovalController::class,
+            'paymentProof'
+        ])->name('expenses.payment-proof');
+
     Route::get('/audit-log', [AuditLogController::class, 'index'])
         ->name('audit.index');
 

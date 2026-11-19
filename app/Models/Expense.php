@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\JournalEntry;
 
 class Expense extends Model
 {
@@ -26,6 +27,8 @@ class Expense extends Model
         'submitted_by',
         'approved_by',
         'rejection_reason',
+        'payment_source',
+        'journal_entry_id',
     ];
 
     protected function casts(): array
@@ -58,7 +61,12 @@ class Expense extends Model
     }
 
     public function payer(): BelongsTo
-{
-    return $this->belongsTo(User::class, 'paid_by');
-}
+    {
+        return $this->belongsTo(User::class, 'paid_by');
+    }
+
+    public function journalEntry(): BelongsTo
+    {
+        return $this->belongsTo(JournalEntry::class, 'journal_entry_id');
+    }
 }

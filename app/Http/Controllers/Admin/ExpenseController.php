@@ -12,6 +12,8 @@ use App\Models\Distribution;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
+use App\Models\LedgerAccount;
+use App\Services\Finance\JournalService;
 
 class ExpenseController extends Controller
 {
@@ -118,11 +120,16 @@ public function store(Request $request)
 }
 
 /**
- * Mencatat pembayaran pengeluaran oleh Admin.
+ * Mencatat pembayaran pengeluaran oleh Admin
+ * dan membuat jurnal otomatis untuk pengeluaran nyata.
  */
 public function recordPayment(Request $request, $id)
 {
-    $request->validate([
+    $data = $request->validate([
+        'payment_source' => [
+            'required',
+            'in:cash,bank',
+        ],
         'proof' => [
             'required',
             'file',
@@ -130,6 +137,8 @@ public function recordPayment(Request $request, $id)
             'max:5120',
         ],
     ], [
+        'payment_source.required' => 'Sumber pembayaran wajib dipilih.',
+        'payment_source.in' => 'Sumber pembayaran tidak valid.',
         'proof.required' => 'Bukti pembayaran wajib diunggah.',
         'proof.mimes' => 'Bukti harus berupa JPG, JPEG, PNG, atau PDF.',
         'proof.max' => 'Ukuran bukti maksimal 5 MB.',
@@ -138,7 +147,7 @@ public function recordPayment(Request $request, $id)
     $proofPath = null;
 
     try {
-        DB::transaction(function () use ($request, $id, &$proofPath) {
+        DB::transaction(function () use ($request, $data, $id, &$proofPath) {
             $expense = Expense::where('id', $id)
                 ->where('submitted_by', Auth::id())
                 ->lockForUpdate()
@@ -156,9 +165,14 @@ public function recordPayment(Request $request, $id)
                 ]);
             }
 
+            if ($expense->journal_entry_id) {
+                throw ValidationException::withMessages([
+                    'proof' => 'Pengeluaran ini sudah terhubung dengan jurnal.',
+                ]);
+            }
+
             $distribution = null;
 
-            // Jika pengeluaran terkait penyaluran, kunci dan periksa anggarannya.
             if ($expense->distribution_id) {
                 $distribution = DB::table('distributions')
                     ->where('id', $expense->distribution_id)
@@ -177,7 +191,6 @@ public function recordPayment(Request $request, $id)
                     ]);
                 }
 
-                // Hitung pengeluaran nyata yang sudah dibayar sebelumnya.
                 $paidBefore = (int) DB::table('expenses')
                     ->where('distribution_id', $distribution->id)
                     ->where('approval_status', 'approved')
@@ -199,7 +212,7 @@ public function recordPayment(Request $request, $id)
                 }
             }
 
-            // Simpan bukti pembayaran pada private local storage.
+            // Simpan bukti pembayaran secara privat.
             $proofPath = Storage::disk('local')->putFile(
                 'expense-payment-proofs',
                 $request->file('proof')
@@ -211,14 +224,120 @@ public function recordPayment(Request $request, $id)
                 );
             }
 
+            // Catat pembayaran pengeluaran.
             $expense->update([
                 'receipt_file' => $proofPath,
+                'payment_source' => $data['payment_source'],
                 'payment_status' => 'paid',
                 'paid_at' => now(),
                 'paid_by' => Auth::id(),
             ]);
 
-            // Perbarui total biaya aktual berdasarkan pengeluaran yang sudah dibayar.
+            /*
+             * JURNAL OTOMATIS
+             *
+             * Pengeluaran simulasi tidak menghasilkan jurnal nyata.
+             */
+            if (!$expense->is_simulated) {
+
+                // Pastikan belum ada jurnal untuk sumber pengeluaran ini.
+                $existingJournal = DB::table('journal_entries')
+                    ->where('source_type', 'expense')
+                    ->where('source_id', (string) $expense->id)
+                    ->exists();
+
+                if ($existingJournal) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Jurnal untuk pengeluaran ini sudah pernah dibuat. Periksa data jurnal sebelum melanjutkan.',
+                    ]);
+                }
+
+                // Tentukan akun debit berdasarkan jenis pengeluaran.
+                $debitCode = match ($expense->expense_type) {
+                    'distribution_detail' => '5003',
+                    'additional' => '5002',
+                    default => null,
+                };
+
+                if (!$debitCode) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Jenis pengeluaran tidak memiliki pemetaan akun jurnal.',
+                    ]);
+                }
+
+                // Tentukan akun kredit berdasarkan sumber pembayaran.
+                $creditCode = match ($data['payment_source']) {
+                    'cash' => '1001',
+                    'bank' => '1002',
+                };
+
+                $debitAccount = LedgerAccount::where('code', $debitCode)
+                    ->where('is_active', true)
+                    ->first();
+
+                $creditAccount = LedgerAccount::where('code', $creditCode)
+                    ->where('is_active', true)
+                    ->first();
+
+                if (!$debitAccount || !$creditAccount) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Akun buku besar untuk pengeluaran tidak ditemukan atau tidak aktif.',
+                    ]);
+                }
+
+                $amount = (int) $expense->amount;
+
+                if ($amount <= 0) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Nominal pengeluaran tidak valid untuk jurnal.',
+                    ]);
+                }
+
+                // Buat jurnal draft.
+                $journalService = app(JournalService::class);
+
+                $journal = $journalService->createDraft([
+                    'entry_date' => now()->toDateString(),
+                    'description' => 'Pembayaran pengeluaran: '
+                        . $expense->expense_category
+                        . ' - '
+                        . $expense->description,
+
+                    'source_type' => 'expense',
+                    'source_id' => (string) $expense->id,
+
+                    'lines' => [
+                        [
+                            'ledger_account_id' => $debitAccount->id,
+                            'description' => 'Beban pengeluaran '
+                                . $expense->expense_category,
+                            'debit' => $amount,
+                            'credit' => 0,
+                        ],
+                        [
+                            'ledger_account_id' => $creditAccount->id,
+                            'description' => $data['payment_source'] === 'cash'
+                                ? 'Pembayaran melalui kas'
+                                : 'Pembayaran melalui rekening bank',
+                            'debit' => 0,
+                            'credit' => $amount,
+                        ],
+                    ],
+                ], Auth::id());
+
+                // Posting jurnal.
+                $postedJournal = $journalService->post(
+                    $journal,
+                    Auth::id()
+                );
+
+                // Simpan relasi jurnal ke pengeluaran.
+                $expense->update([
+                    'journal_entry_id' => $postedJournal->id,
+                ]);
+            }
+
+            // Perbarui rekap total biaya aktual penyaluran.
             if ($distribution) {
                 $paidTotal = (int) DB::table('expenses')
                     ->where('distribution_id', $distribution->id)
@@ -236,7 +355,7 @@ public function recordPayment(Request $request, $id)
             }
         });
     } catch (\Throwable $e) {
-        // Hapus bukti jika transaksi database gagal.
+        // Hapus file jika transaksi database gagal.
         if ($proofPath) {
             Storage::disk('local')->delete($proofPath);
         }
@@ -246,9 +365,10 @@ public function recordPayment(Request $request, $id)
 
     return back()->with(
         'success',
-        'Pembayaran pengeluaran berhasil dicatat.'
+        'Pembayaran pengeluaran berhasil dicatat. Jurnal dibuat otomatis hanya untuk pengeluaran nyata.'
     );
 }
+
 
 
 /**

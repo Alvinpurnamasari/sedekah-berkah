@@ -24,7 +24,7 @@ const statusLabel = {
 export default function Index({ expenses }) {
     const [search, setSearch] = useState('');
     const [processingId, setProcessingId] = useState(null);
-
+    const [proofUrl, setProofUrl] = useState(null);
     const rows = expenses?.data || [];
 
     const filtered = rows.filter((item) => {
@@ -124,7 +124,8 @@ export default function Index({ expenses }) {
                                     <th>Pengaju</th>
                                     <th>Nominal</th>
                                     <th>Bukti</th>
-                                    <th>Status</th>
+                                    <th>Status Persetujuan</th>
+                                    <th>Status Pembayaran</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -155,7 +156,20 @@ export default function Index({ expenses }) {
                                             </small>
 
                                             <small>{item.description}</small>
-
+                                            <small
+                                                style={{
+                                                    display: 'inline-block',
+                                                    width: 'fit-content',
+                                                    marginTop: 6,
+                                                    padding: '4px 8px',
+                                                    borderRadius: 5,
+                                                    fontWeight: 600,
+                                                    background: item.is_simulated ? '#fff7ed' : '#e8f7ee',
+                                                    color: item.is_simulated ? '#c2410c' : '#16734f',
+                                                }}
+                                            >
+                                                {item.is_simulated ? 'DATA SIMULASI' : 'DATA NYATA'}
+                                            </small>
                                             {item.expense_type === 'distribution_detail' && (
                                                 <small>
                                                     Penyaluran: {item.distribution?.title || 'Belum tersedia'}
@@ -216,14 +230,15 @@ export default function Index({ expenses }) {
                                         </td>
                                         <td>
                                             {item.receipt_file ? (
-                                                <a
-                                                    href={`/storage/${item.receipt_file}`}
-                                                    target="_blank"
-                                                    rel="noreferrer"
+                                                <button
+                                                    type="button"
                                                     className="se-proof"
+                                                    onClick={() => setProofUrl(
+                                                        `/superadmin/pengeluaran/${item.id}/bukti-pembayaran`
+                                                    )}
                                                 >
                                                     <Eye size={16} /> Lihat
-                                                </a>
+                                                </button>
                                             ) : (
                                                 <span>-</span>
                                             )}
@@ -239,6 +254,17 @@ export default function Index({ expenses }) {
                                                     <p>{item.rejection_reason}</p>
                                                 </div>
                                             )}
+                                        </td>
+                                        <td>
+                                            <span
+                                                className={`se-status ${
+                                                    item.payment_status === 'paid' ? 'approved' : 'pending'
+                                                }`}
+                                            >
+                                                {item.payment_status === 'paid'
+                                                    ? 'Sudah Dibayar'
+                                                    : 'Belum Dibayar'}
+                                            </span>
                                         </td>
                                         <td>
                                             {item.approval_status === 'pending' ? (
@@ -305,6 +331,60 @@ export default function Index({ expenses }) {
                     Data simulasi tidak memengaruhi saldo nyata.
                 </div>
             </div>
+            {proofUrl && (
+                <div
+                    onClick={() => setProofUrl(null)}
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        zIndex: 9999,
+                        background: 'rgba(0,0,0,0.75)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 20,
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: '#fff',
+                            borderRadius: 12,
+                            padding: 16,
+                            maxWidth: 800,
+                            width: '100%',
+                            maxHeight: '90vh',
+                            overflow: 'auto',
+                        }}
+                    >
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: 12,
+                        }}>
+                            <strong>Bukti Pembayaran</strong>
+                            <button
+                                type="button"
+                                onClick={() => setProofUrl(null)}
+                            >
+                                Tutup
+                            </button>
+                        </div>
+
+                        <img
+                            src={proofUrl}
+                            alt="Bukti pembayaran"
+                            style={{
+                                display: 'block',
+                                maxWidth: '100%',
+                                maxHeight: '75vh',
+                                margin: 'auto',
+                                objectFit: 'contain',
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
         </SuperadminLayout>
     );
 }

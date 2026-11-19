@@ -1242,7 +1242,14 @@ export default function Show({
                                     background: '#f5f8f6',
                                     textAlign: 'left',
                                 }}>
-                                    {['KATEGORI', 'KETERANGAN', 'NOMINAL', 'STATUS PERSETUJUAN', 'STATUS PEMBAYARAN'].map((heading) => (
+                                    {[
+                                        'KATEGORI',
+                                        'KETERANGAN',
+                                        'JENIS DATA',
+                                        'NOMINAL',
+                                        'STATUS PERSETUJUAN',
+                                        'STATUS PEMBAYARAN',
+                                    ].map((heading) => (
                                         <th key={heading} style={{
                                             padding: 13,
                                             fontSize: 12,
@@ -1264,7 +1271,22 @@ export default function Show({
                                         </td>
                                         <td style={{ padding: 13 }}>
                                             <div>{expense.description}</div>
+                                        </td>
 
+                                        <td style={{ padding: 13 }}>
+                                            <span
+                                                style={{
+                                                    display: 'inline-block',
+                                                    padding: '5px 9px',
+                                                    borderRadius: 6,
+                                                    fontSize: 12,
+                                                    fontWeight: 600,
+                                                    background: expense.is_simulated ? '#fff7ed' : '#e8f7ee',
+                                                    color: expense.is_simulated ? '#c2410c' : '#16734f',
+                                                }}
+                                            >
+                                                {expense.is_simulated ? 'SIMULASI' : 'NYATA'}
+                                            </span>
                                         </td>
                                         <td style={{ padding: 13 }}>
                                             {rupiah(expense.amount)}

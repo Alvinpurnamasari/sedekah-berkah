@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class ExpenseApprovalController extends Controller
 {
@@ -165,5 +166,27 @@ public function approve(string $id)
     
         return back()->with('success', 'Pengajuan pengeluaran berhasil ditolak.');
     }
+   
+    public function paymentProof(string $id)
+    {
+        $expense = Expense::findOrFail($id);
     
+        abort_unless(
+            $expense->payment_status === 'paid'
+            && $expense->receipt_file
+            && Storage::disk('local')->exists($expense->receipt_file),
+            404,
+            'Bukti pembayaran tidak ditemukan.'
+        );
+    
+        $path = Storage::disk('local')->path($expense->receipt_file);
+    
+        return response()->file($path, [
+            'Content-Type' => Storage::disk('local')->mimeType($expense->receipt_file),
+            'Content-Disposition' => 'inline; filename="bukti-pembayaran.png"',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
 }
