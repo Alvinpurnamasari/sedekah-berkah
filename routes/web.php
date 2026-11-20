@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\BeneficiaryTargetController;
 use App\Http\Controllers\Admin\TransactionController as AdminTransactionController;
 use App\Http\Controllers\Admin\DocumentationController;
 use App\Http\Controllers\Superadmin\SettingsController;
+use App\Http\Controllers\Superadmin\GatewayFeeController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -431,6 +432,9 @@ Route::middleware('role:superadmin')->prefix('superadmin')->name('superadmin.')-
 
     Route::get('/keuangan', [FinanceController::class, 'index'])
         ->name('finance.index');
+
+    Route::get('/biaya-payment-gateway', [GatewayFeeController::class, 'index'])
+        ->name('gateway-fees.index');
 
     Route::get('/alokasi-dana', [AllocationController::class, 'index'])
         ->name('allocations.index');
