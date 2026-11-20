@@ -12,6 +12,10 @@ import {
     TrendingUp,
     TrendingDown,
     Landmark,
+    PiggyBank,
+    AlertTriangle,
+    Link2Off,
+    BadgeCheck,
 } from 'lucide-react';
 import '../../../../css/superadmin-finance.css';
 
@@ -69,6 +73,34 @@ export default function AllocationIndex({
             color: 'purple',
             description: 'Dukungan operasional dari donatur',
         },
+        {
+            label: 'Anggaran Disetujui',
+            value: allocation_totals.allocated_budget,
+            icon: BadgeCheck,
+            color: 'blue',
+            description: 'Total anggaran penyaluran yang disetujui',
+        },
+        {
+            label: 'Dana Belum Dialokasikan',
+            value: allocation_totals.unallocated_funds,
+            icon: PiggyBank,
+            color: 'green',
+            description: 'Dana masuk dikurangi anggaran disetujui',
+        },
+        {
+            label: 'Kekurangan Dana',
+            value: allocation_totals.funding_shortfall,
+            icon: AlertTriangle,
+            color: 'purple',
+            description: 'Anggaran disetujui yang belum didukung dana masuk',
+        },
+        {
+            label: 'Anggaran Belum Terhubung',
+            value: allocation_totals.unmapped_approved_budget,
+            icon: Link2Off,
+            color: 'dark',
+            description: 'Anggaran yang belum terhubung ke akun program',
+        },
     ];
 
     return (
@@ -83,19 +115,22 @@ export default function AllocationIndex({
                         </span>
                         <h1>Alokasi Dana</h1>
                         <p>
-                            Pantau dana masuk, pengeluaran, dan saldo
-                            setiap program serta kelompok dana lainnya.
+                            Pantau dana masuk, pengeluaran, anggaran
+                            penyaluran, dan dana yang belum dialokasikan.
                         </p>
                     </div>
                 </div>
 
-                {/* Ringkasan dana program */}
+                {/* Ringkasan dana dan alokasi */}
                 <section className="sf-card-grid">
                     {totals.map((item) => {
                         const Icon = item.icon;
 
                         return (
-                            <article className="sf-summary-card" key={item.label}>
+                            <article
+                                className="sf-summary-card"
+                                key={item.label}
+                            >
                                 <div className={`sf-card-icon ${item.color}`}>
                                     <Icon size={22} />
                                 </div>
@@ -111,7 +146,7 @@ export default function AllocationIndex({
                 </section>
 
                 {/* Rincian dana setiap kampanye */}
-                <section className="sf-panel">
+                <section className="sf-panel sf-allocation-panel">
                     <div className="sf-panel-heading">
                         <div>
                             <h2>
@@ -126,22 +161,25 @@ export default function AllocationIndex({
                                 Alokasi Dana Per Program
                             </h2>
                             <p>
-                                Rincian dana masuk, pengeluaran, dan saldo
-                                berdasarkan masing-masing kampanye.
+                                Rincian dana masuk, anggaran disetujui,
+                                pengeluaran, dan sisa dana setiap program.
                             </p>
                         </div>
                     </div>
 
                     <div className="sf-table-wrap">
-                        <table className="sf-table">
+                    <table className="sf-table sf-allocation-table">
                             <thead>
                                 <tr>
                                     <th>Nama Program</th>
                                     <th>Kategori</th>
                                     <th>Akun</th>
                                     <th>Dana Masuk</th>
+                                    <th>Anggaran Disetujui</th>
                                     <th>Pengeluaran</th>
-                                    <th>Saldo</th>
+                                    <th>Saldo Dana</th>
+                                    <th>Belum Dialokasikan</th>
+                                    <th>Kekurangan Dana</th>
                                 </tr>
                             </thead>
 
@@ -176,6 +214,10 @@ export default function AllocationIndex({
                                             </td>
 
                                             <td>
+                                                {rupiah(campaign.allocated_budget)}
+                                            </td>
+
+                                            <td>
                                                 {rupiah(campaign.total_expenses)}
                                             </td>
 
@@ -184,11 +226,23 @@ export default function AllocationIndex({
                                                     {rupiah(campaign.remaining_balance)}
                                                 </strong>
                                             </td>
+
+                                            <td>
+                                                <strong>
+                                                    {rupiah(campaign.unallocated_balance)}
+                                                </strong>
+                                            </td>
+
+                                            <td>
+                                                <strong>
+                                                    {rupiah(campaign.funding_shortfall)}
+                                                </strong>
+                                            </td>
                                         </tr>
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="6" className="sf-empty">
+                                        <td colSpan="9" className="sf-empty">
                                             Belum ada kampanye yang terhubung
                                             dengan akun dana program.
                                         </td>
@@ -199,14 +253,19 @@ export default function AllocationIndex({
                     </div>
                 </section>
 
-                {/* Saldo kelompok dana */}
+                {/* Saldo kelompok dana berdasarkan jurnal */}
                 <section className="sf-card-grid">
                     {summary.map((group) => {
                         const Icon = icons[group.key] || Wallet;
 
                         return (
-                            <article className="sf-summary-card" key={group.key}>
-                                <div className={`sf-card-icon ${colors[group.key] || 'blue'}`}>
+                            <article
+                                className="sf-summary-card"
+                                key={group.key}
+                            >
+                                <div
+                                    className={`sf-card-icon ${colors[group.key] || 'blue'}`}
+                                >
                                     <Icon size={22} />
                                 </div>
 
@@ -262,7 +321,7 @@ export default function AllocationIndex({
                             </div>
 
                             <div className="sf-table-wrap">
-                                <table className="sf-table">
+                            <table className="sf-table sf-allocation-table">
                                     <thead>
                                         <tr>
                                             <th>Kode Akun</th>
@@ -291,7 +350,8 @@ export default function AllocationIndex({
                                         ) : (
                                             <tr>
                                                 <td colSpan="4" className="sf-empty">
-                                                    Belum ada akun pada kelompok dana ini.
+                                                    Belum ada akun pada kelompok
+                                                    dana ini.
                                                 </td>
                                             </tr>
                                         )}
@@ -307,11 +367,14 @@ export default function AllocationIndex({
                     <span>
                         Dana masuk hanya menghitung donasi riil berstatus paid.
                         Pengeluaran hanya menghitung transaksi riil yang
-                        disetujui dan sudah dibayar. Transaksi simulasi,
+                        disetujui dan sudah dibayar. Anggaran dialokasikan
+                        berdasarkan penyaluran riil dengan status approved.
+                        Dana belum dialokasikan dihitung dari dana masuk
+                        dikurangi anggaran yang disetujui. Kekurangan dana
+                        menunjukkan anggaran yang belum didukung dana masuk.
+                        Anggaran yang belum terhubung ke akun program
+                        ditampilkan secara terpisah. Transaksi simulasi,
                         pending, dan ditolak tidak diperhitungkan.
-                        Saldo buku dihitung terpisah berdasarkan jurnal
-                        berstatus posted. Saldo dana program bukan otomatis
-                        berarti seluruh dana bebas dialokasikan.
                     </span>
                 </div>
             </div>

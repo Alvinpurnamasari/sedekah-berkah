@@ -250,3 +250,117 @@
         padding: 18px 15px;
     }
 }
+
+/* =========================================
+   TABEL ALOKASI DANA PER PROGRAM
+========================================= */
+
+.sf-allocation-panel {
+    min-width: 0;
+}
+
+.sf-allocation-panel .sf-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #b8cec2 #f2f6f3;
+    -webkit-overflow-scrolling: touch;
+}
+
+.sf-allocation-panel .sf-allocation-table {
+    width: 100%;
+    min-width: 1450px;
+    table-layout: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.sf-allocation-table th,
+.sf-allocation-table td {
+    padding: 15px 14px;
+    vertical-align: middle;
+}
+
+.sf-allocation-table th {
+    white-space: nowrap;
+}
+
+.sf-allocation-table td {
+    white-space: nowrap;
+}
+
+.sf-allocation-table th:first-child,
+.sf-allocation-table td:first-child {
+    position: sticky;
+    left: 0;
+    min-width: 190px;
+    background: #fff;
+    z-index: 2;
+    box-shadow: 4px 0 7px rgba(24, 61, 50, 0.04);
+}
+
+.sf-allocation-table th:first-child {
+    background: #f7faf8;
+    z-index: 3;
+}
+
+.sf-allocation-table th:nth-child(2),
+.sf-allocation-table td:nth-child(2) {
+    min-width: 135px;
+}
+
+.sf-allocation-table th:nth-child(3),
+.sf-allocation-table td:nth-child(3) {
+    min-width: 190px;
+}
+
+.sf-allocation-table th:nth-child(n+4),
+.sf-allocation-table td:nth-child(n+4) {
+    min-width: 145px;
+}
+
+.sf-allocation-table td strong {
+    font-weight: 650;
+}
+
+.sf-allocation-panel .sf-table-wrap::-webkit-scrollbar {
+    height: 9px;
+}
+
+.sf-allocation-panel .sf-table-wrap::-webkit-scrollbar-track {
+    background: #f2f6f3;
+    border-radius: 10px;
+}
+
+.sf-allocation-panel .sf-table-wrap::-webkit-scrollbar-thumb {
+    background: #b8cec2;
+    border-radius: 10px;
+}
+
+.sf-allocation-panel .sf-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: #16845c;
+}
+
+/* Tampilan tablet dan HP */
+@media (max-width: 650px) {
+    .sf-allocation-panel .sf-panel-heading {
+        padding: 17px 15px;
+    }
+
+    .sf-allocation-panel .sf-allocation-table {
+        min-width: 1350px;
+    }
+
+    .sf-allocation-table th,
+    .sf-allocation-table td {
+        padding: 13px 12px;
+        font-size: 11px;
+    }
+
+    .sf-allocation-table th:first-child,
+    .sf-allocation-table td:first-child {
+        min-width: 170px;
+    }
+}
