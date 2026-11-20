@@ -167,33 +167,31 @@ public function approve(string $id)
         return back()->with('success', 'Pengajuan pengeluaran berhasil ditolak.');
     }
    
-  
-public function paymentProof(string $id)
-{
-    $expense = Expense::findOrFail($id);
-
-    abort_unless(
-        $expense->payment_status === 'paid'
-        && $expense->receipt_file
-        && Storage::disk('local')->exists($expense->receipt_file),
-        404,
-        'Bukti pembayaran tidak ditemukan.'
-    );
-
-    $path = Storage::disk('local')->path($expense->receipt_file);
-
-    // Bersihkan output buffer agar tidak ada karakter tambahan
-    // sebelum byte pertama file gambar.
-    while (ob_get_level() > 0) {
-        ob_end_clean();
+    public function paymentProof(string $id)
+    {
+        $expense = Expense::findOrFail($id);
+    
+        abort_unless(
+            $expense->payment_status === 'paid'
+            && $expense->receipt_file
+            && Storage::disk('local')->exists($expense->receipt_file),
+            404,
+            'Bukti pembayaran tidak ditemukan.'
+        );
+    
+        $path = Storage::disk('local')->path($expense->receipt_file);
+        $mimeType = Storage::disk('local')->mimeType($expense->receipt_file);
+        $fileName = basename($expense->receipt_file);
+    
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+    
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
-
-    return response()->file($path, [
-        'Content-Type' => Storage::disk('local')->mimeType($expense->receipt_file),
-        'Content-Disposition' => 'inline; filename="bukti-pembayaran.png"',
-        'Cache-Control' => 'private, no-store',
-        'X-Content-Type-Options' => 'nosniff',
-    ]);
-}
-
 }

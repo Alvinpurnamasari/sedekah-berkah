@@ -131,64 +131,67 @@ Route::middleware('auth')->group(function () {
         Inertia::render('Pensedekah/Dashboard')
     )->middleware('role:pensedekah')->name('pensedekah.dashboard');
 
+
+    Route::get('/admin', function () {
+        $adminId = auth()->id();
     
-Route::get('/admin', function () {
-    $summary = [
-        'activeCampaigns' => DB::table('campaigns')
-            ->where('status', 'active')
-            ->count(),
-
-        'verifiedFunds' => DB::table('donations')
-            ->where('payment_status', 'paid')
-            ->where('is_simulated', false)
-            ->sum(DB::raw('donation_amount + operational_support')),
-
-        'successfulDonations' => DB::table('donations')
-            ->where('payment_status', 'paid')
-            ->where('is_simulated', false)
-            ->count(),
-
-        'distributionSchedules' => DB::table('distributions')
-            ->where('status', 'planned')
-            ->where('is_simulated', false)
-            ->count(),
-
-        'pendingReports' => DB::table('distributions')
-            ->where('report_status', 'pending')
-            ->where('is_simulated', false)
-            ->count(),
-
-        'pendingExpenses' => DB::table('expenses')
-            ->where('approval_status', 'pending')
-            ->where('is_simulated', false)
-            ->count(),
-    ];
-
-    $recentActivities = DB::table('audit_logs')
-        ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
-        ->where(function ($query) {
-            $query->where('users.role_id', function ($subquery) {
-                $subquery->select('id')
-                    ->from('roles')
-                    ->where('name', 'admin');
-            })->orWhereNull('audit_logs.user_id');
-        })
-        ->select(
-            'audit_logs.action',
-            'audit_logs.entity_type',
-            'audit_logs.created_at',
-            'users.name as user_name'
-        )
-        ->latest('audit_logs.created_at')
-        ->limit(6)
-        ->get();
-
-    return Inertia::render('Admin/Dashboard', [
-        'summary' => $summary,
-        'recentActivities' => $recentActivities,
-    ]);
-})->middleware('role:admin')->name('admin.dashboard');
-
+        $summary = [
+            // Statistik kampanye dan donasi bersifat global.
+            'activeCampaigns' => DB::table('campaigns')
+                ->where('status', 'active')
+                ->count(),
+    
+            'verifiedFunds' => DB::table('donations')
+                ->where('payment_status', 'paid')
+                ->where('is_simulated', false)
+                ->sum(DB::raw('donation_amount + operational_support')),
+    
+            'successfulDonations' => DB::table('donations')
+                ->where('payment_status', 'paid')
+                ->where('is_simulated', false)
+                ->count(),
+    
+            // Statistik penyaluran berdasarkan Admin pembuat.
+            'distributionSchedules' => DB::table('distributions')
+                ->where('created_by', $adminId)
+                ->where('status', 'planned')
+                ->where('is_simulated', false)
+                ->count(),
+    
+            'pendingReports' => DB::table('distributions')
+                ->where('created_by', $adminId)
+                ->where('report_status', 'pending')
+                ->where('is_simulated', false)
+                ->count(),
+    
+            // Pengeluaran berdasarkan Admin pengaju.
+            'pendingExpenses' => DB::table('expenses')
+                ->where('submitted_by', $adminId)
+                ->where('approval_status', 'pending')
+                ->where('is_simulated', false)
+                ->count(),
+        ];
+    
+        // Aktivitas hanya milik Admin yang sedang login.
+        $recentActivities = DB::table('audit_logs')
+            ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
+            ->where('audit_logs.user_id', $adminId)
+            ->select(
+                'audit_logs.action',
+                'audit_logs.entity_type',
+                'audit_logs.created_at',
+                'users.name as user_name'
+            )
+            ->latest('audit_logs.created_at')
+            ->limit(6)
+            ->get();
+    
+        return Inertia::render('Admin/Dashboard', [
+            'summary' => $summary,
+            'recentActivities' => $recentActivities,
+        ]);
+    })->middleware('role:admin')->name('admin.dashboard');
+    
 // Manajemen Program Admin
 Route::middleware('role:admin')
     ->prefix('admin/program')

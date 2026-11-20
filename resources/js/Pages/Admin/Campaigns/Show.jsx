@@ -38,6 +38,7 @@ const statusLabel = {
     published: 'Published',
     active: 'Aktif',
     rejected: 'Ditolak',
+    inactive: 'Nonaktif',
 };
 
 export default function CampaignShow({ campaign, flash = {} }) {
@@ -272,15 +273,17 @@ export default function CampaignShow({ campaign, flash = {} }) {
                     <div className="mt-8 rounded-lg bg-amber-50 border border-amber-200 p-4">
                         <strong>Status Pengelolaan Program</strong>
                         <p className="mt-1 text-sm">
-                            {campaign.status === 'draft'
-                                ? 'Program masih berupa Draft. Silakan periksa kembali lalu ajukan kepada Superadmin.'
-                                : campaign.status === 'pending_approval'
-                                ? 'Program sedang menunggu pemeriksaan dan persetujuan Superadmin.'
-                                : campaign.status === 'rejected'
-                                ? `Program ditolak oleh Superadmin. Alasan: ${campaign.rejection_reason || 'Tidak ada keterangan.'} Silakan perbaiki dan ajukan kembali.`
-                                : campaign.status === 'published'
-                                ? 'Program telah disetujui dan dipublikasikan. Program dapat menerima donasi.'
-                                : 'Program sedang tidak aktif.'}
+                        {campaign.status === 'draft'
+                            ? 'Program masih berupa Draft. Silakan periksa kembali lalu ajukan kepada Superadmin.'
+                            : campaign.status === 'pending_approval'
+                            ? 'Program sedang menunggu pemeriksaan dan persetujuan Superadmin.'
+                            : campaign.status === 'rejected'
+                            ? `Program ditolak oleh Superadmin. Alasan: ${campaign.rejection_reason || 'Tidak ada keterangan.'} Silakan perbaiki dan ajukan kembali.`
+                            : campaign.status === 'published'
+                            ? 'Program telah disetujui dan dipublikasikan. Program dapat menerima donasi.'
+                            : campaign.status === 'active'
+                            ? 'Program sedang berlangsung.'
+                            : 'Program sedang tidak aktif.'}
                         </p>
                     </div>
                 </section>

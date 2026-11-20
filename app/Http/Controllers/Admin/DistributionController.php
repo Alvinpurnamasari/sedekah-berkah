@@ -26,6 +26,7 @@ class DistributionController extends Controller
                 'distributions.*',
                 'campaigns.title as campaign_title'
             )
+            ->where('distributions.created_by', auth()->id())
             ->when($request->search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('distributions.title', 'like', "%{$search}%")
@@ -145,11 +146,10 @@ class DistributionController extends Controller
             abort_if(!$distribution, 404);
 
             abort_if(
-                $distribution->created_by !== auth()->id(),
+                (string) $distribution->created_by !== (string) auth()->id(),
                 403,
                 'Anda hanya dapat mengajukan anggaran rencana yang Anda buat.'
             );
-
             abort_if(
                 !in_array($distribution->budget_status, ['draft', 'revision', 'rejected']),
                 403,
@@ -222,6 +222,11 @@ class DistributionController extends Controller
             ->first();
 
         abort_if(!$distribution, 404);
+        abort_if(
+            (string) $distribution->created_by !== (string) auth()->id(),
+            403,
+            'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+        );
 
         $expenses = DB::table('expenses')
             ->where('distribution_id', $id)
@@ -275,6 +280,12 @@ class DistributionController extends Controller
                 ->first();
 
                 abort_if(!$distribution, 404);
+
+                abort_if(
+                    (string) $distribution->created_by !== (string) auth()->id(),
+                    403,
+                    'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+                );
 
                 abort_if(
                     $distribution->budget_status !== 'approved',
@@ -347,6 +358,12 @@ public function uploadDocument(Request $request, string $id)
         ->first();
 
     abort_if(!$distribution, 404);
+
+    abort_if(
+        (string) $distribution->created_by !== (string) auth()->id(),
+        403,
+        'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+    );
 
     abort_if(
         !in_array($distribution->report_status, ['draft', 'revision']),
@@ -429,6 +446,12 @@ public function uploadDocument(Request $request, string $id)
         abort_if(!$distribution, 404);
 
         abort_if(
+            (string) $distribution->created_by !== (string) auth()->id(),
+            403,
+            'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+        );
+
+        abort_if(
             !in_array($distribution->report_status, ['draft', 'revision']),
             403,
             'Dokumentasi tidak dapat dihapus karena laporan sudah diajukan atau disetujui.'
@@ -482,6 +505,12 @@ public function uploadDocument(Request $request, string $id)
                 ->first();
 
             abort_if(!$distribution, 404);
+
+            abort_if(
+                (string) $distribution->created_by !== (string) auth()->id(),
+                403,
+                'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+            );
 
             abort_if(
                 $distribution->status !== 'completed',

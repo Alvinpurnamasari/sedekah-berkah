@@ -710,3 +710,9 @@
         grid-template-columns: 1fr;
     }
 }
+/* Ruang tambahan untuk navigasi bawah pada tampilan mobile */
+@media (max-width: 520px) {
+    .campaign-detail {
+        padding-bottom: calc(100px + env(safe-area-inset-bottom));
+    }
+}

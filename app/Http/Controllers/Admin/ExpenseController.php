@@ -32,6 +32,7 @@ class ExpenseController extends Controller
             ->get(['id', 'title']),
 
             'distributions' => Distribution::with('campaign:id,title')
+            ->where('created_by', Auth::id())
             ->latest()
             ->get([
                 'id',
@@ -68,6 +69,12 @@ public function store(Request $request)
             $distribution = Distribution::where('id', $data['distribution_id'])
                 ->lockForUpdate()
                 ->firstOrFail();
+
+            if ((string) $distribution->created_by !== (string) Auth::id()) {
+                throw ValidationException::withMessages([
+                    'distribution_id' => 'Anda hanya dapat mengajukan pengeluaran untuk kegiatan yang Anda buat sendiri.',
+                ]);
+            }   
 
             if ($distribution->budget_status !== 'approved') {
                 throw ValidationException::withMessages([
@@ -185,6 +192,12 @@ public function recordPayment(Request $request, $id)
                     ]);
                 }
 
+                if ((string) $distribution->created_by !== (string) Auth::id()) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Anda tidak memiliki akses ke kegiatan penyaluran ini.',
+                    ]);
+                }
+                
                 if ($distribution->budget_status !== 'approved') {
                     throw ValidationException::withMessages([
                         'proof' => 'Anggaran penyaluran belum disetujui.',

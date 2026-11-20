@@ -23,11 +23,10 @@ class BeneficiaryTargetController extends Controller
             });
         }
 
-        if ($request->filled('status')) {
-            $query->where(
-                'is_active',
-                $request->status === 'active'
-            );
+        if ($request->status === 'active') {
+            $query->where('is_active', true);
+        } elseif ($request->status === 'inactive') {
+            $query->where('is_active', false);
         }
 
         $targets = $query

@@ -188,9 +188,11 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                     )}
 
                                     <small>
-                                        Rincian biaya penyaluran merupakan bagian
-                                        dari total biaya penyaluran. Biaya
-                                        tambahan dicatat terpisah.
+                                        {data.expense_type === 'distribution_detail'
+                                            ? 'Rincian biaya penyaluran merupakan bagian dari total biaya penyaluran kegiatan.'
+                                            : data.expense_type === 'additional'
+                                            ? 'Biaya tambahan dicatat secara terpisah dari rincian biaya penyaluran.'
+                                            : 'Pilih jenis pengeluaran untuk melihat keterangannya.'}
                                     </small>
                                 </div>
 
@@ -273,39 +275,40 @@ export default function Index({ expenses, campaigns, distributions = [] }) {
                                     )}
                                 </div>
 
-                                <div className="ad-expense-field">
-                                    <label htmlFor="expense-campaign">
-                                        Program terkait
-                                    </label>
+                                {data.expense_type === 'additional' && (
+                                    <div className="ad-expense-field">
+                                        <label htmlFor="expense-campaign">
+                                            Program terkait
+                                        </label>
 
-                                    <select
-                                        id="expense-campaign"
-                                        value={data.campaign_id}
-                                        onChange={(e) =>
-                                            setData('campaign_id', e.target.value)
-                                        }
-                                    >
-                                        <option value="">
-                                            Pengeluaran umum / tidak terkait program
-                                        </option>
-
-                                        {campaigns.map((campaign) => (
-                                            <option
-                                                key={campaign.id}
-                                                value={campaign.id}
-                                            >
-                                                {campaign.title}
+                                        <select
+                                            id="expense-campaign"
+                                            value={data.campaign_id}
+                                            onChange={(e) =>
+                                                setData('campaign_id', e.target.value)
+                                            }
+                                        >
+                                            <option value="">
+                                                Pengeluaran umum / tidak terkait program
                                             </option>
-                                        ))}
-                                    </select>
 
-                                    {errors.campaign_id && (
-                                        <small className="ad-expense-error">
-                                            {errors.campaign_id}
-                                        </small>
-                                    )}
-                                </div>
+                                            {campaigns.map((campaign) => (
+                                                <option
+                                                    key={campaign.id}
+                                                    value={campaign.id}
+                                                >
+                                                    {campaign.title}
+                                                </option>
+                                            ))}
+                                        </select>
 
+                                        {errors.campaign_id && (
+                                            <small className="ad-expense-error">
+                                                {errors.campaign_id}
+                                            </small>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="ad-expense-field">
                                     <label htmlFor="expense-amount">
                                         Nominal pengeluaran (Rp) *

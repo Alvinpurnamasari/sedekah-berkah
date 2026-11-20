@@ -25,6 +25,7 @@ export default function Index({ expenses }) {
     const [search, setSearch] = useState('');
     const [processingId, setProcessingId] = useState(null);
     const [proofUrl, setProofUrl] = useState(null);
+    const [proofType, setProofType] = useState(null);
     const rows = expenses?.data || [];
 
     const filtered = rows.filter((item) => {
@@ -132,7 +133,7 @@ export default function Index({ expenses }) {
                             <tbody>
                                 {filtered.length === 0 ? (
                                     <tr>
-                                        <td colSpan="8" className="se-empty">
+                                        <td colSpan="9" className="se-empty">
                                             <Wallet size={30} />
                                             <strong>
                                                 Belum ada pengajuan pengeluaran
@@ -229,20 +230,26 @@ export default function Index({ expenses }) {
                                             <strong>{rupiah(item.amount)}</strong>
                                         </td>
                                         <td>
-                                            {item.receipt_file ? (
+                                            {item.payment_status === 'paid' && item.receipt_file ? (
                                                 <button
                                                     type="button"
                                                     className="se-proof"
-                                                    onClick={() => setProofUrl(
-                                                        `/superadmin/pengeluaran/${item.id}/bukti-pembayaran`
-                                                    )}
+                                                    onClick={() => {
+                                                        setProofUrl(
+                                                            `/superadmin/pengeluaran/${item.id}/bukti-pembayaran`
+                                                        );
+
+                                                        setProofType(
+                                                            item.receipt_file.split('.').pop().toLowerCase()
+                                                        );
+                                                    }}
                                                 >
                                                     <Eye size={16} /> Lihat
                                                 </button>
                                             ) : (
                                                 <span>-</span>
                                             )}
-                                        </td>                                  
+                                        </td>                               
                                         <td>
                                             <span className={`se-status ${item.approval_status}`}>
                                                 {statusLabel[item.approval_status] || item.approval_status}
@@ -332,59 +339,79 @@ export default function Index({ expenses }) {
                 </div>
             </div>
             {proofUrl && (
-                <div
-                    onClick={() => setProofUrl(null)}
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        zIndex: 9999,
-                        background: 'rgba(0,0,0,0.75)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 20,
+    <div
+        onClick={() => {
+            setProofUrl(null);
+            setProofType(null);
+        }}
+        style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.75)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+        }}
+    >
+        <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+                background: '#fff',
+                borderRadius: 12,
+                padding: 16,
+                maxWidth: 900,
+                width: '100%',
+                maxHeight: '90vh',
+                overflow: 'auto',
+            }}
+        >
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 12,
+            }}>
+                <strong>Bukti Pembayaran</strong>
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        setProofUrl(null);
+                        setProofType(null);
                     }}
                 >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        style={{
-                            background: '#fff',
-                            borderRadius: 12,
-                            padding: 16,
-                            maxWidth: 800,
-                            width: '100%',
-                            maxHeight: '90vh',
-                            overflow: 'auto',
-                        }}
-                    >
-                        <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            marginBottom: 12,
-                        }}>
-                            <strong>Bukti Pembayaran</strong>
-                            <button
-                                type="button"
-                                onClick={() => setProofUrl(null)}
-                            >
-                                Tutup
-                            </button>
-                        </div>
+                    Tutup
+                </button>
+            </div>
 
-                        <img
-                            src={proofUrl}
-                            alt="Bukti pembayaran"
-                            style={{
-                                display: 'block',
-                                maxWidth: '100%',
-                                maxHeight: '75vh',
-                                margin: 'auto',
-                                objectFit: 'contain',
-                            }}
-                        />
-                    </div>
-                </div>
+            {proofType === 'pdf' ? (
+                <iframe
+                    src={proofUrl}
+                    title="Bukti Pembayaran PDF"
+                    style={{
+                        width: '100%',
+                        height: '75vh',
+                        border: 'none',
+                    }}
+                />
+            ) : (
+                <img
+                    src={proofUrl}
+                    alt="Bukti pembayaran"
+                    style={{
+                        display: 'block',
+                        maxWidth: '100%',
+                        maxHeight: '75vh',
+                        margin: 'auto',
+                        objectFit: 'contain',
+                    }}
+                />
             )}
+        </div>
+    </div>
+)}
         </SuperadminLayout>
     );
 }

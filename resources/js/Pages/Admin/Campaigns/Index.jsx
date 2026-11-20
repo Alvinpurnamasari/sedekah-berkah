@@ -209,7 +209,7 @@ export default function CampaignIndex({
                                                         <Eye size={16} />
                                                     </button>
 
-                                                    {campaign.status === 'draft' && (
+                                                    {['draft', 'rejected'].includes(campaign.status) && (
                                                         <button
                                                             type="button"
                                                             title="Edit program Draft"

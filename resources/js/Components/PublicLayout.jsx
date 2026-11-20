@@ -1,11 +1,25 @@
+
 import React, { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import '../../css/home.css';
 
 export default function PublicLayout({ children }) {
     const [menuOpen, setMenuOpen] = useState(false);
-    const { url } = usePage();
+    const { url, props } = usePage();
+
     const currentPath = url.split('?')[0];
+    const organization = props.organization || {};
+
+    const organizationName =
+        organization.organization_name || 'Sedekah Berkah';
+
+    const description =
+        organization.organization_description ||
+        'Sedekah Berkah adalah platform sedekah digital yang berfokus pada penyaluran bantuan secara terarah dan transparan di Yogyakarta.';
+
+    const logo = organization.organization_logo
+        ? `/storage/${organization.organization_logo}`
+        : null;
 
     const isActive = (path) => {
         if (path === '/program') {
@@ -15,14 +29,26 @@ export default function PublicLayout({ children }) {
         return currentPath === path;
     };
 
+    const Brand = () => (
+        <Link href="/" className="sb-brand">
+            {logo ? (
+                <img
+                    src={logo}
+                    alt={organizationName}
+                    className="sb-brand-logo"
+                />
+            ) : (
+                <span className="sb-brand-icon">♥</span>
+            )}
+            <span>{organizationName}</span>
+        </Link>
+    );
+
     return (
         <div className="sb-home">
             <header className="sb-header">
                 <div className="sb-container sb-nav">
-                    <Link href="/" className="sb-brand">
-                        <span className="sb-brand-icon">♥</span>
-                        <span>Sedekah<br />Berkah</span>
-                    </Link>
+                    <Brand />
 
                     <button
                         className="sb-menu-button"
@@ -67,7 +93,9 @@ export default function PublicLayout({ children }) {
                     </nav>
 
                     <div className="sb-nav-actions">
-                        <Link href="/login" className="sb-login">Login</Link>
+                        <Link href="/login" className="sb-login">
+                            Login
+                        </Link>
                         <Link href="/#sedekah" className="sb-button sb-nav-donate">
                             Sedekah
                         </Link>
@@ -81,14 +109,8 @@ export default function PublicLayout({ children }) {
                 <div className="sb-container">
                     <div className="sb-footer-grid">
                         <div>
-                            <Link href="/" className="sb-brand">
-                                <span className="sb-brand-icon">♥</span>
-                                <span>Sedekah<br />Berkah</span>
-                            </Link>
-                            <p>
-                                Satu kebaikan, banyak kebahagiaan.
-                                Platform sedekah digital yang beroperasi di Yogyakarta.
-                            </p>
+                            <Brand />
+                            <p>{description}</p>
                         </div>
 
                         <div>
@@ -100,14 +122,27 @@ export default function PublicLayout({ children }) {
 
                         <div>
                             <h4>Kontak</h4>
-                            <span>Yogyakarta, Indonesia</span>
-                            <span>halo@sedekahberkah.id (contoh)</span>
-                            <span>Admin · <Link href="/login">Masuk</Link></span>
+
+                            {organization.organization_address && (
+                                <span>{organization.organization_address}</span>
+                            )}
+
+                            {organization.organization_email && (
+                                <span>{organization.organization_email}</span>
+                            )}
+
+                            {organization.organization_phone && (
+                                <span>{organization.organization_phone}</span>
+                            )}
+
+                            <span>
+                                Admin · <Link href="/login">Masuk</Link>
+                            </span>
                         </div>
                     </div>
 
                     <div className="sb-copyright">
-                        © {new Date().getFullYear()} Sedekah Berkah
+                        © {new Date().getFullYear()} {organizationName}
                     </div>
                 </div>
             </footer>
@@ -123,7 +158,7 @@ export default function PublicLayout({ children }) {
                     <span>♥</span>Sedekah
                 </Link>
                 <Link href="/transparansi">
-                    <span>▤</span>Laporan
+                    <span>◈</span>Laporan
                 </Link>
                 <Link href="/login">
                     <span>♙</span>Akun
