@@ -11,11 +11,12 @@ use Inertia\Inertia;
 
 class AuthController extends Controller
 {
-    public function showLogin()
-    {
-        return Inertia::render('Auth/Login');
-    }
-
+    public function showLogin(Request $request)
+{
+    return Inertia::render('Auth/Login', [
+        'redirect' => $request->query('redirect', ''),
+    ]);
+}
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -41,7 +42,7 @@ class AuthController extends Controller
             ]);
         }
 
-        return $this->redirectByRole();
+        return $this->redirectByRole($request);
     }
 
     public function showRegister()
@@ -85,14 +86,28 @@ class AuthController extends Controller
         return redirect()->route('home');
     }
 
-    private function redirectByRole()
+    private function redirectByRole(Request $request)
     {
         $role = Auth::user()->role?->name;
+
+        if ($role === 'pensedekah') {
+            $redirect = $request->input('redirect');
+
+            // Hanya izinkan redirect lokal ke halaman checkout.
+            if (
+                is_string($redirect) &&
+                str_starts_with($redirect, '/checkout/') &&
+                !str_contains($redirect, '//')
+            ) {
+                return redirect()->to($redirect);
+            }
+
+            return redirect()->route('pensedekah.dashboard');
+        }
 
         return match ($role) {
             'superadmin' => redirect()->route('superadmin.dashboard'),
             'admin' => redirect()->route('admin.dashboard'),
-            'pensedekah' => redirect()->route('pensedekah.dashboard'),
             default => abort(403, 'Role akun belum terdaftar.'),
         };
     }

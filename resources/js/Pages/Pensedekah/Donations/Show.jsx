@@ -99,6 +99,11 @@ export default function Show({ donation }) {
         Number(donation.donation_amount || 0) +
         Number(donation.operational_support || 0);
 
+    // URL untuk melihat bukti transfer melalui route yang dilindungi login.
+    const proofUrl = donation.transfer_proof
+        ? `/akun/donasi/${encodeURIComponent(donation.donation_code)}/bukti`
+        : null;
+
     return (
         <PensedekahLayout title="Detail Donasi">
             <div style={{
@@ -332,6 +337,60 @@ export default function Show({ donation }) {
                         label="Tanggal Verifikasi"
                         value={formatDate(donation.verified_at)}
                     />
+                    <div style={{ paddingTop: 18 }}>
+                        <p style={{
+                            color: '#64748b',
+                            marginBottom: 10,
+                            fontSize: 14,
+                            fontWeight: 600,
+                        }}>
+                            Bukti Transfer
+                        </p>
+
+                        {proofUrl ? (
+                            <a
+                                href={proofUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    display: 'inline-block',
+                                    textDecoration: 'none',
+                                }}
+                            >
+                                <img
+                                    src={proofUrl}
+                                    alt="Bukti transfer donasi"
+                                    style={{
+                                        display: 'block',
+                                        maxWidth: '100%',
+                                        width: 420,
+                                        maxHeight: 450,
+                                        objectFit: 'contain',
+                                        borderRadius: 10,
+                                        border: '1px solid #e5e7eb',
+                                        background: '#f8fafc',
+                                    }}
+                                />
+                                <span style={{
+                                    display: 'inline-block',
+                                    marginTop: 10,
+                                    color: '#176b45',
+                                    fontSize: 13,
+                                    fontWeight: 600,
+                                }}>
+                                    Klik gambar untuk membuka ukuran penuh
+                                </span>
+                            </a>
+                        ) : (
+                            <p style={{
+                                color: '#94a3b8',
+                                fontSize: 14,
+                                margin: 0,
+                            }}>
+                                Belum ada bukti transfer yang diunggah.
+                            </p>
+                        )}
+                    </div>
 
                     {donation.verification_note && (
                         <div style={{ paddingTop: 15 }}>

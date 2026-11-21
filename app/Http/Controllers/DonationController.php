@@ -100,7 +100,7 @@ class DonationController extends Controller
                 'message' => $data['message'] ?? null,
 
                 'payment_status' => 'pending',
-                'user_id' => $request->user()?->id,
+                'user_id' => $request->user()->id,
 
                 // Rekening tujuan transfer.
                 'donation_account_id' => $account->id,
@@ -149,94 +149,102 @@ class DonationController extends Controller
         ], 201);
     }
 
-       
-public function uploadProof(Request $request, string $code)
-{
-    // Validasi file bukti transfer.
-    $data = $request->validate([
-        'proof' => 'required|image|mimes:jpg,jpeg,png|max:2048',
-    ], [
-        'proof.required' => 'Bukti transfer wajib diunggah.',
-        'proof.image' => 'File harus berupa gambar.',
-        'proof.mimes' => 'Format bukti transfer harus JPG, JPEG, atau PNG.',
-        'proof.max' => 'Ukuran bukti transfer maksimal 2 MB.',
-    ]);
-
-    $newPath = null;
-    $oldPath = null;
-
-    try {
-        $donation = DB::transaction(function () use (
-            $code,
-            $data,
-            &$newPath,
-            &$oldPath
-        ) {
-            // Kunci data agar tidak diproses bersamaan.
-            $donation = Donation::where('donation_code', $code)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            // Bukti hanya boleh diunggah selama pembayaran pending.
-            if ($donation->payment_status !== 'pending') {
-                throw ValidationException::withMessages([
-                    'proof' => 'Bukti transfer hanya dapat diunggah untuk donasi yang masih menunggu pembayaran.',
-                ]);
-            }
-
-            // Simpan bukti di storage lokal yang tidak publik.
-            $newPath = Storage::disk('local')->putFile(
-                'donation-proofs',
-                $data['proof']
-            );
-
-            if (!$newPath) {
-                throw new \RuntimeException(
-                    'Gagal menyimpan bukti transfer.'
-                );
-            }
-
-            // Simpan lokasi bukti sebelumnya untuk dihapus setelah berhasil.
-            $oldPath = $donation->transfer_proof;
-
-            // Perbarui data donasi dan reset pemeriksaan sebelumnya.
-            $donation->update([
-                'transfer_proof' => $newPath,
-                'proof_status' => 'pending',
-                'proof_uploaded_at' => now(),
-                'verified_by' => null,
-                'verified_at' => null,
-                'verification_note' => null,
-            ]);
-
-            return $donation;
-        });
-
-        // Hapus bukti lama setelah transaksi database berhasil.
-        if ($oldPath && Storage::disk('local')->exists($oldPath)) {
-            Storage::disk('local')->delete($oldPath);
+    public function uploadProof(Request $request, string $code)
+    {
+        // Pastikan pengguna sudah login.
+        $user = $request->user();
+    
+        if (!$user || $user->role?->name !== 'pensedekah') {
+            abort(403, 'Anda tidak memiliki akses untuk mengunggah bukti pembayaran.');
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Bukti transfer berhasil diunggah. Silakan tunggu verifikasi admin.',
-            'data' => [
-                'donation_code' => $donation->donation_code,
-                'proof_uploaded_at' => $donation->proof_uploaded_at,
-                'proof_status' => $donation->proof_status,
-                'payment_status' => $donation->payment_status,
-            ],
+    
+        // Validasi file bukti transfer.
+        $data = $request->validate([
+            'proof' => 'required|image|mimes:jpg,jpeg,png|max:2048',
+        ], [
+            'proof.required' => 'Bukti transfer wajib diunggah.',
+            'proof.image' => 'File harus berupa gambar.',
+            'proof.mimes' => 'Format bukti transfer harus JPG, JPEG, atau PNG.',
+            'proof.max' => 'Ukuran bukti transfer maksimal 2 MB.',
         ]);
-    } catch (\Throwable $e) {
-        // Bersihkan file baru jika proses database gagal.
-        if ($newPath && Storage::disk('local')->exists($newPath)) {
-            Storage::disk('local')->delete($newPath);
+    
+        $newPath = null;
+        $oldPath = null;
+    
+        try {
+            $donation = DB::transaction(function () use (
+                $code,
+                $data,
+                $user,
+                &$newPath,
+                &$oldPath
+            ) {
+                // Cari donasi milik pengguna yang sedang login.
+                $donation = Donation::where('donation_code', $code)
+                    ->where('user_id', $user->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+    
+                // Bukti hanya boleh diunggah selama pembayaran pending.
+                if ($donation->payment_status !== 'pending') {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Bukti transfer hanya dapat diunggah untuk donasi yang masih menunggu pembayaran.',
+                    ]);
+                }
+    
+                // Simpan bukti di storage lokal yang tidak publik.
+                $newPath = Storage::disk('local')->putFile(
+                    'donation-proofs',
+                    $data['proof']
+                );
+    
+                if (!$newPath) {
+                    throw new \RuntimeException(
+                        'Gagal menyimpan bukti transfer.'
+                    );
+                }
+    
+                // Simpan lokasi bukti sebelumnya.
+                $oldPath = $donation->transfer_proof;
+    
+                // Perbarui data donasi dan reset pemeriksaan sebelumnya.
+                $donation->update([
+                    'transfer_proof' => $newPath,
+                    'proof_status' => 'pending',
+                    'proof_uploaded_at' => now(),
+                    'verified_by' => null,
+                    'verified_at' => null,
+                    'verification_note' => null,
+                ]);
+    
+                return $donation;
+            });
+    
+            // Hapus bukti lama setelah transaksi database berhasil.
+            if ($oldPath && Storage::disk('local')->exists($oldPath)) {
+                Storage::disk('local')->delete($oldPath);
+            }
+    
+            return response()->json([
+                'success' => true,
+                'message' => 'Bukti transfer berhasil diunggah. Silakan tunggu verifikasi admin.',
+                'data' => [
+                    'donation_code' => $donation->donation_code,
+                    'proof_uploaded_at' => $donation->proof_uploaded_at,
+                    'proof_status' => $donation->proof_status,
+                    'payment_status' => $donation->payment_status,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            // Bersihkan file baru jika proses database gagal.
+            if ($newPath && Storage::disk('local')->exists($newPath)) {
+                Storage::disk('local')->delete($newPath);
+            }
+    
+            throw $e;
         }
-
-        throw $e;
     }
-}
-
+    
     public function status(string $code)
     {
         $donation = Donation::where('donation_code', $code)

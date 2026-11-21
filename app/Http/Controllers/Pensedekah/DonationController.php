@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Storage;
 
 class DonationController extends Controller
 {
@@ -88,6 +89,7 @@ class DonationController extends Controller
                 'donations.operational_support',
                 'donations.payment_status',
                 'donations.proof_status',
+                'donations.transfer_proof',
                 'donations.proof_uploaded_at',
                 'donations.verified_at',
                 'donations.verification_note',
@@ -112,4 +114,49 @@ class DonationController extends Controller
             'donation' => $donation,
         ]);
     }
+
+ 
+public function proof(Request $request, string $code)
+{
+    $donation = DB::table('donations')
+        ->where('user_id', $request->user()->id)
+        ->where('donation_code', $code)
+        ->where('is_simulated', false)
+        ->first();
+
+    abort_if(!$donation, 404);
+
+    abort_if(
+        !$donation->transfer_proof,
+        404,
+        'Bukti transfer belum tersedia.'
+    );
+
+    $disk = Storage::disk('local');
+
+    abort_unless(
+        $disk->exists($donation->transfer_proof),
+        404,
+        'File bukti transfer tidak ditemukan.'
+    );
+
+    $path = $disk->path($donation->transfer_proof);
+    $mimeType = $disk->mimeType($donation->transfer_proof);
+    $fileName = basename($donation->transfer_proof);
+
+    // Bersihkan output buffer agar tidak ada karakter tambahan
+    // sebelum data gambar dikirim ke browser.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
+    return response()->file($path, [
+        'Content-Type' => $mimeType,
+        'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        'Cache-Control' => 'private, no-store',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
+}
+
+
 }

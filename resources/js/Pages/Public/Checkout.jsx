@@ -1,6 +1,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import '../../../css/checkout.css';
 
@@ -22,7 +22,7 @@ const paymentMethods = [
     },
     {
         value: 'bank_transfer',
-        symbol: '▤',
+        symbol: '¤',
         title: 'Transfer Bank',
         description: 'Transfer melalui rekening bank tujuan',
     },
@@ -34,10 +34,15 @@ const paymentMethods = [
     },
 ];
 
+const CHECKOUT_DRAFT_KEY = 'sedekah_berkah_checkout_draft';
+
 export default function Checkout({
     slug,
     donationAccounts = [],
 }) {
+    const { auth = {} } = usePage().props;
+    const isLoggedIn = Boolean(auth.user);
+
     const [campaign, setCampaign] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -67,10 +72,11 @@ export default function Checkout({
     const [result, setResult] = useState(null);
 
     // Upload bukti transfer
-const [proofFile, setProofFile] = useState(null);
-const [proofBusy, setProofBusy] = useState(false);
-const [proofMessage, setProofMessage] = useState('');
-const [proofError, setProofError] = useState('');
+    const [proofFile, setProofFile] = useState(null);
+    const [proofBusy, setProofBusy] = useState(false);
+    const [proofMessage, setProofMessage] = useState('');
+    const [proofError, setProofError] = useState('');
+
     // Status salin nomor rekening
     const [copiedAccountId, setCopiedAccountId] = useState(null);
 
@@ -101,8 +107,72 @@ const [proofError, setProofError] = useState('');
             });
     }, [slug]);
 
+    // Mengembalikan data checkout setelah login
+    useEffect(() => {
+        if (!isLoggedIn) {
+            return;
+        }
+
+        try {
+            const savedDraft = sessionStorage.getItem(CHECKOUT_DRAFT_KEY);
+
+            if (!savedDraft) {
+                return;
+            }
+
+            const draft = JSON.parse(savedDraft);
+
+            if (draft.slug !== slug) {
+                return;
+            }
+
+            setAmount(draft.amount ?? 25000);
+            setCustomAmount(draft.customAmount ?? '');
+            setTargetId(draft.targetId ?? '');
+            setName(draft.name ?? '');
+            setContact(draft.contact ?? '');
+            setAnon(draft.anon ?? false);
+            setMessage(draft.message ?? '');
+            setSupportEnabled(draft.supportEnabled ?? false);
+            setSupportAmount(draft.supportAmount ?? 0);
+            setPaymentMethod(draft.paymentMethod ?? 'bank_transfer');
+            setSelectedDonationAccountId(
+                draft.selectedDonationAccountId ?? ''
+            );
+
+            sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+        } catch (error) {
+            console.error('Gagal memulihkan data checkout:', error);
+            sessionStorage.removeItem(CHECKOUT_DRAFT_KEY);
+        }
+    }, [isLoggedIn, slug]);
+
+    // Menyimpan data checkout sebelum diarahkan ke login
+    function saveCheckoutDraft() {
+        const draft = {
+            slug,
+            amount,
+            customAmount,
+            targetId,
+            name,
+            contact,
+            anon,
+            message,
+            supportEnabled,
+            supportAmount,
+            paymentMethod,
+            selectedDonationAccountId,
+        };
+
+        sessionStorage.setItem(
+            CHECKOUT_DRAFT_KEY,
+            JSON.stringify(draft)
+        );
+    }
+
     // Perhitungan nominal
     const selectedAmount = Number(customAmount || amount);
+
     const operationalAmount = supportEnabled
         ? Number(supportAmount || 0)
         : 0;
@@ -146,6 +216,17 @@ const [proofError, setProofError] = useState('');
         event.preventDefault();
 
         if (!campaign) {
+            return;
+        }
+
+        // Wajib login sebelum membuat transaksi
+        if (!isLoggedIn) {
+            saveCheckoutDraft();
+
+            router.visit(
+                `/login?redirect=${encodeURIComponent(`/checkout/${slug}`)}`
+            );
+
             return;
         }
 
@@ -227,60 +308,60 @@ const [proofError, setProofError] = useState('');
     }
 
     // Upload bukti transfer
-async function uploadTransferProof(event) {
-    event.preventDefault();
+    async function uploadTransferProof(event) {
+        event.preventDefault();
 
-    if (!result || !proofFile) {
-        setProofError('Silakan pilih foto bukti transfer terlebih dahulu.');
-        return;
+        if (!result || !proofFile) {
+            setProofError('Silakan pilih foto bukti transfer terlebih dahulu.');
+            return;
+        }
+
+        const allowedTypes = ['image/jpeg', 'image/png'];
+
+        if (!allowedTypes.includes(proofFile.type)) {
+            setProofError('Format file harus JPG, JPEG, atau PNG.');
+            return;
+        }
+
+        if (proofFile.size > 2 * 1024 * 1024) {
+            setProofError('Ukuran file maksimal 2 MB.');
+            return;
+        }
+
+        setProofBusy(true);
+        setProofError('');
+        setProofMessage('');
+
+        try {
+            const formData = new FormData();
+            formData.append('proof', proofFile);
+
+            const response = await axios.post(
+                `/api/v1/donations/${encodeURIComponent(result.donation_code)}/proof`,
+                formData
+            );
+
+            setProofMessage(
+                response.data.message || 'Bukti transfer berhasil diunggah.'
+            );
+
+            setProofFile(null);
+        } catch (err) {
+            const validationErrors = err.response?.data?.errors;
+
+            const firstError = validationErrors
+                ? Object.values(validationErrors).flat()[0]
+                : null;
+
+            setProofError(
+                firstError ||
+                err.response?.data?.message ||
+                'Bukti transfer gagal diunggah. Silakan coba kembali.'
+            );
+        } finally {
+            setProofBusy(false);
+        }
     }
-
-    const allowedTypes = ['image/jpeg', 'image/png'];
-
-    if (!allowedTypes.includes(proofFile.type)) {
-        setProofError('Format file harus JPG, JPEG, atau PNG.');
-        return;
-    }
-
-    if (proofFile.size > 2 * 1024 * 1024) {
-        setProofError('Ukuran file maksimal 2 MB.');
-        return;
-    }
-
-    setProofBusy(true);
-    setProofError('');
-    setProofMessage('');
-
-    try {
-        const formData = new FormData();
-        formData.append('proof', proofFile);
-
-        const response = await axios.post(
-            `/api/v1/donations/${encodeURIComponent(result.donation_code)}/proof`,
-            formData
-        );
-
-        setProofMessage(
-            response.data.message || 'Bukti transfer berhasil diunggah.'
-        );
-
-        setProofFile(null);
-    } catch (err) {
-        const validationErrors = err.response?.data?.errors;
-
-        const firstError = validationErrors
-            ? Object.values(validationErrors).flat()[0]
-            : null;
-
-        setProofError(
-            firstError ||
-            err.response?.data?.message ||
-            'Bukti transfer gagal diunggah. Silakan coba kembali.'
-        );
-    } finally {
-        setProofBusy(false);
-    }
-}
 
     // Tampilan loading
     if (loading) {
@@ -406,64 +487,67 @@ async function uploadTransferProof(event) {
                             Donasi akan diverifikasi oleh pengelola setelah
                             pembayaran diterima.
                         </p>
+
                         {/* UPLOAD BUKTI TRANSFER */}
-                            <div className="transfer-proof-section">
-                                <h3>Konfirmasi Pembayaran</h3>
+                        <div className="transfer-proof-section">
+                            <h3>Konfirmasi Pembayaran</h3>
 
-                                <p>
-                                    Setelah melakukan transfer, silakan unggah
-                                    bukti pembayaran Anda.
-                                </p>
+                            <p>
+                                Setelah melakukan transfer, silakan unggah
+                                bukti pembayaran Anda.
+                            </p>
 
-                                <form onSubmit={uploadTransferProof}>
-                                    <label className="checkout-label">
-                                        Foto bukti transfer
+                            <form onSubmit={uploadTransferProof}>
+                                <label className="checkout-label">
+                                    Foto bukti transfer
 
-                                        <input
-                                            type="file"
-                                            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                                            onChange={(event) => {
-                                                setProofFile(event.target.files?.[0] || null);
-                                                setProofError('');
-                                                setProofMessage('');
-                                            }}
-                                            disabled={proofBusy}
-                                        />
-                                    </label>
+                                    <input
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+                                        onChange={(event) => {
+                                            setProofFile(
+                                                event.target.files?.[0] || null
+                                            );
+                                            setProofError('');
+                                            setProofMessage('');
+                                        }}
+                                        disabled={proofBusy}
+                                    />
+                                </label>
 
-                                    {proofFile && (
-                                        <p>
-                                            File dipilih: <strong>{proofFile.name}</strong>
-                                        </p>
-                                    )}
+                                {proofFile && (
+                                    <p>
+                                        File dipilih: <strong>{proofFile.name}</strong>
+                                    </p>
+                                )}
 
-                                    {proofError && (
-                                        <p role="alert" style={{ color: '#dc2626' }}>
-                                            {proofError}
-                                        </p>
-                                    )}
+                                {proofError && (
+                                    <p role="alert" style={{ color: '#dc2626' }}>
+                                        {proofError}
+                                    </p>
+                                )}
 
-                                    {proofMessage && (
-                                        <p role="status" style={{ color: '#15803d' }}>
-                                            {proofMessage}
-                                        </p>
-                                    )}
+                                {proofMessage && (
+                                    <p role="status" style={{ color: '#15803d' }}>
+                                        {proofMessage}
+                                    </p>
+                                )}
 
-                                    <button
-                                        type="submit"
-                                        className="checkout-primary"
-                                        disabled={!proofFile || proofBusy}
-                                    >
-                                        {proofBusy
-                                            ? 'Mengunggah...'
-                                            : 'Unggah Bukti Transfer'}
-                                    </button>
+                                <button
+                                    type="submit"
+                                    className="checkout-primary"
+                                    disabled={!proofFile || proofBusy}
+                                >
+                                    {proofBusy
+                                        ? 'Mengunggah...'
+                                        : 'Unggah Bukti Transfer'}
+                                </button>
 
-                                    <small>
-                                        Format JPG, JPEG, atau PNG. Maksimal 2 MB.
-                                    </small>
-                                </form>
-                            </div>
+                                <small>
+                                    Format JPG, JPEG, atau PNG. Maksimal 2 MB.
+                                </small>
+                            </form>
+                        </div>
 
                         <Link
                             href="/program"
@@ -780,66 +864,79 @@ async function uploadTransferProof(event) {
                                         </p>
 
                                         {donationAccounts.length > 0 ? (
-                                            <div className="donation-account-list">                        
-                                            {donationAccounts.map((account) => {
-                                                const isSelected =
-                                                    String(selectedDonationAccountId) === String(account.id);
+                                            <div className="donation-account-list">
+                                                {donationAccounts.map((account) => {
+                                                    const isSelected =
+                                                        String(selectedDonationAccountId) ===
+                                                        String(account.id);
 
-                                                return (
-                                                    <div
-                                                        key={account.id}
-                                                        role="button"
-                                                        tabIndex={0}
-                                                        aria-pressed={isSelected}
-                                                        className={`donation-account-item ${
-                                                            isSelected ? 'selected' : ''
-                                                        }`}
-                                                        onClick={() => setSelectedDonationAccountId(account.id)}
-                                                        onKeyDown={(e) => {
-                                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                                e.preventDefault();
-                                                                setSelectedDonationAccountId(account.id);
+                                                    return (
+                                                        <div
+                                                            key={account.id}
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            aria-pressed={isSelected}
+                                                            className={`donation-account-item ${
+                                                                isSelected ? 'selected' : ''
+                                                            }`}
+                                                            onClick={() =>
+                                                                setSelectedDonationAccountId(
+                                                                    account.id
+                                                                )
                                                             }
-                                                        }}
-                                                    >
-                                                        <div className="donation-account-info">
-                                                            <strong>{account.bank_name}</strong>
+                                                            onKeyDown={(e) => {
+                                                                if (
+                                                                    e.key === 'Enter' ||
+                                                                    e.key === ' '
+                                                                ) {
+                                                                    e.preventDefault();
+                                                                    setSelectedDonationAccountId(
+                                                                        account.id
+                                                                    );
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="donation-account-info">
+                                                                <strong>
+                                                                    {account.bank_name}
+                                                                </strong>
 
-                                                            <span className="donation-account-number">
-                                                                {account.account_number}
+                                                                <span className="donation-account-number">
+                                                                    {account.account_number}
+                                                                </span>
+
+                                                                <span>
+                                                                    Atas nama: {account.account_holder}
+                                                                </span>
+
+                                                                {account.description && (
+                                                                    <small>
+                                                                        {account.description}
+                                                                    </small>
+                                                                )}
+
+                                                                {isSelected && (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="donation-account-copy"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            copyAccountNumber(account);
+                                                                        }}
+                                                                    >
+                                                                        {copiedAccountId === account.id
+                                                                            ? 'Tersalin'
+                                                                            : 'Salin Nomor Rekening'}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            <span className="payment-radio">
+                                                                {isSelected ? '●' : '○'}
                                                             </span>
-
-                                                            <span>
-                                                                Atas nama: {account.account_holder}
-                                                            </span>
-
-                                                            {account.description && (
-                                                                <small>{account.description}</small>
-                                                            )}
-
-                                                            {isSelected && (
-                                                                <button
-                                                                    type="button"
-                                                                    className="donation-account-copy"
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        copyAccountNumber(account);
-                                                                    }}
-                                                                >
-                                                                    {copiedAccountId === account.id
-                                                                        ? 'Tersalin'
-                                                                        : 'Salin Nomor Rekening'}
-                                                                </button>
-                                                            )}
                                                         </div>
-
-                                                        <span className="payment-radio">
-                                                            {isSelected ? '●' : '○'}
-                                                        </span>
-                                                    </div>
-                                                );
-                                            })}
-
+                                                    );
+                                                })}
                                             </div>
                                         ) : (
                                             <p className="donation-accounts-empty">
@@ -847,7 +944,6 @@ async function uploadTransferProof(event) {
                                                 Silakan hubungi pengelola.
                                             </p>
                                         )}
-
                                     </div>
                                 )}
 
@@ -945,7 +1041,9 @@ async function uploadTransferProof(event) {
                                 </button>
 
                                 <p className="checkout-secure">
-                                    Donasi tanpa harus membuat akun.
+                                    {isLoggedIn
+                                        ? 'Transaksi akan tercatat pada akun Pensedekah Anda.'
+                                        : 'Silakan login ke akun Pensedekah untuk membuat transaksi.'}
                                 </p>
                             </div>
                         </aside>

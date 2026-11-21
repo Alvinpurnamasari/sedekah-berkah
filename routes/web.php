@@ -21,6 +21,8 @@ use App\Http\Controllers\Admin\TransactionController as AdminTransactionControll
 use App\Http\Controllers\Admin\DocumentationController;
 use App\Http\Controllers\Superadmin\SettingsController;
 use App\Http\Controllers\Superadmin\GatewayFeeController;
+use App\Http\Controllers\Pensedekah\DashboardController;
+use App\Http\Controllers\DonationController;
 
 Route::get('/', fn () => Inertia::render('Public/Home'))
     ->name('home');
@@ -124,25 +126,53 @@ Route::middleware('guest')->group(function () {
 
 // Halaman yang hanya bisa diakses setelah login
 Route::middleware('auth')->group(function () {
+
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
-        //Pensedekah
-        Route::middleware('role:pensedekah')->group(function () {
-            Route::get('/akun', fn () =>
-                Inertia::render('Pensedekah/Dashboard')
-            )->name('pensedekah.dashboard');
-        
-            Route::get('/akun/donasi', [
-                \App\Http\Controllers\Pensedekah\DonationController::class,
-                'index'
-            ])->name('pensedekah.donations.index');
-        
-            Route::get('/akun/donasi/{code}', [
-                \App\Http\Controllers\Pensedekah\DonationController::class,
-                'show'
-            ])->name('pensedekah.donations.show');
-        });
+    // Pensedekah
+    Route::middleware('role:pensedekah')->group(function () {
+
+        // Membuat transaksi donasi (wajib login Pensedekah)
+        Route::post('/api/v1/donations', [
+            \App\Http\Controllers\DonationController::class,
+            'store'
+        ])
+            ->middleware('throttle:10,1')
+            ->name('pensedekah.donations.store');
+
+        // Upload bukti transfer (hanya pemilik donasi)
+        Route::post('/api/v1/donations/{code}/proof', [
+            \App\Http\Controllers\DonationController::class,
+            'uploadProof'
+        ])
+            ->middleware('throttle:5,1')
+            ->name('pensedekah.donations.upload-proof');
+
+        // Dashboard Pensedekah
+        Route::get('/akun', [DashboardController::class, 'index'])
+            ->name('pensedekah.dashboard');
+
+        // Riwayat donasi
+        Route::get('/akun/donasi', [
+            \App\Http\Controllers\Pensedekah\DonationController::class,
+            'index'
+        ])->name('pensedekah.donations.index');
+
+        // Detail donasi
+        Route::get('/akun/donasi/{code}', [
+            \App\Http\Controllers\Pensedekah\DonationController::class,
+            'show'
+        ])->name('pensedekah.donations.show');
+
+        // Lihat bukti donasi
+        Route::get('/akun/donasi/{code}/bukti', [
+            \App\Http\Controllers\Pensedekah\DonationController::class,
+            'proof'
+        ])->name('pensedekah.donations.proof');
+
+    });
+
 
     Route::get('/admin', function () {
         $adminId = auth()->id();

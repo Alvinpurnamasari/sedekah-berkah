@@ -1,7 +1,32 @@
+
 import React from 'react';
-import {createRoot} from 'react-dom/client';
-import {createInertiaApp} from '@inertiajs/react';
+import { createRoot } from 'react-dom/client';
+import { createInertiaApp } from '@inertiajs/react';
+
 import '../css/app.css';
-createInertiaApp({resolve:name=>{const pages=import.meta.glob('./Pages/**/*.jsx',{eager:true});return pages[`./Pages/${name}.jsx`];},setup({el,App,props}){createRoot(el).render(<App {...props}/>);}});
-// Sementara dinonaktifkan untuk pemeriksaan error PATCH.
-// if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
+const pages = import.meta.glob('./Pages/**/*.jsx', {
+    eager: true,
+});
+
+createInertiaApp({
+    resolve: (name) => {
+        const path = `./Pages/${name}.jsx`;
+        const page = pages[path];
+
+        if (!page) {
+            console.error('Halaman Inertia tidak ditemukan:', path);
+            console.error('Daftar halaman yang tersedia:', Object.keys(pages));
+
+            throw new Error(`Halaman ${path} tidak ditemukan.`);
+        }
+
+        return page;
+    },
+
+    setup({ el, App, props }) {
+        createRoot(el).render(<App {...props} />);
+    },
+});
+
+// Service Worker sementara dinonaktifkan untuk pemeriksaan.
