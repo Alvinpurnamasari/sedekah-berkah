@@ -171,6 +171,26 @@ Route::middleware('auth')->group(function () {
             'proof'
         ])->name('pensedekah.donations.proof');
 
+
+        // Profil Saya - menampilkan data profil
+        Route::get('/akun/profil', [
+            \App\Http\Controllers\Pensedekah\ProfileController::class,
+            'edit'
+        ])->name('pensedekah.profile.edit');
+
+        // Memperbarui data profil
+        Route::put('/akun/profil', [
+            \App\Http\Controllers\Pensedekah\ProfileController::class,
+            'update'
+        ])->name('pensedekah.profile.update');
+
+        // Mengubah password
+        Route::put('/akun/profil/password', [
+            \App\Http\Controllers\Pensedekah\ProfileController::class,
+            'updatePassword'
+        ])->name('pensedekah.profile.password');
+
+
     });
 
 

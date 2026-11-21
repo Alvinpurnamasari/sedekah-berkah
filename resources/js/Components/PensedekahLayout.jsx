@@ -16,6 +16,7 @@ import {
 
 import '../../css/pensedekah.css';
 
+
 const menus = [
     {
         id: 'dashboard',
@@ -39,9 +40,10 @@ const menus = [
         id: 'profile',
         label: 'Profil Saya',
         icon: UserRound,
-        url: null,
+        url: '/akun/profil',
     },
 ];
+
 
 export default function PensedekahLayout({
     title,
