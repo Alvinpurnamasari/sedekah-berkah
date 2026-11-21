@@ -127,10 +127,22 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])
         ->name('logout');
 
-    Route::get('/akun', fn () =>
-        Inertia::render('Pensedekah/Dashboard')
-    )->middleware('role:pensedekah')->name('pensedekah.dashboard');
-
+        //Pensedekah
+        Route::middleware('role:pensedekah')->group(function () {
+            Route::get('/akun', fn () =>
+                Inertia::render('Pensedekah/Dashboard')
+            )->name('pensedekah.dashboard');
+        
+            Route::get('/akun/donasi', [
+                \App\Http\Controllers\Pensedekah\DonationController::class,
+                'index'
+            ])->name('pensedekah.donations.index');
+        
+            Route::get('/akun/donasi/{code}', [
+                \App\Http\Controllers\Pensedekah\DonationController::class,
+                'show'
+            ])->name('pensedekah.donations.show');
+        });
 
     Route::get('/admin', function () {
         $adminId = auth()->id();

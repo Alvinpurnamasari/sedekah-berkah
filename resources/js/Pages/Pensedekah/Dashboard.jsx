@@ -1,22 +1,63 @@
+
 import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Link } from '@inertiajs/react';
+import {
+    Heart,
+    History,
+    FileText,
+    ArrowRight,
+} from 'lucide-react';
+
+import PensedekahLayout from '@/Components/PensedekahLayout';
 
 export default function Dashboard() {
     return (
-        <>
-            <Head title="Akun Pensedekah" />
-            <main style={{
-                minHeight: '100vh', padding: 30, background: '#f3f7f2',
-                fontFamily: 'Arial, sans-serif'
-            }}>
-                <h1 style={{ color: '#176b45' }}>Dashboard Pensedekah</h1>
-                <p>Selamat datang di akun Sedekah Berkah.</p>
-                <p>Di sini nantinya Anda dapat melihat riwayat donasi, status pembayaran,
-                    dan laporan penyaluran sedekah.</p>
-                <Link href="/">Kembali ke Beranda</Link>
-                <br /><br />
-                <button onClick={() => router.post('/logout')}>Keluar</button>
-            </main>
-        </>
+        <PensedekahLayout
+            title="Dashboard"
+            activeMenu="dashboard"
+        >
+            <div className="pd-welcome">
+                <div>
+                    <h2>Selamat Datang di Sedekah Berkah</h2>
+                    <p>
+                        Pantau riwayat donasi dan perkembangan
+                        penyaluran kebaikan Anda.
+                    </p>
+                </div>
+
+                <div className="pd-welcome-icon">
+                    <Heart size={34} />
+                </div>
+            </div>
+
+            <div className="pd-dashboard-grid">
+                <Link
+                    href="/akun/donasi"
+                    className="pd-dashboard-card"
+                >
+                    <div className="pd-dashboard-card-icon">
+                        <History size={24} />
+                    </div>
+                    <h3>Riwayat Donasi</h3>
+                    <p>
+                        Lihat daftar donasi dan status pembayaran Anda.
+                    </p>
+                    <span>
+                        Lihat Riwayat <ArrowRight size={16} />
+                    </span>
+                </Link>
+
+                <div className="pd-dashboard-card">
+                    <div className="pd-dashboard-card-icon">
+                        <FileText size={24} />
+                    </div>
+                    <h3>Laporan Penyaluran</h3>
+                    <p>
+                        Pantau informasi kegiatan penyaluran dana.
+                    </p>
+                    <small>Segera tersedia</small>
+                </div>
+            </div>
+        </PensedekahLayout>
     );
 }
