@@ -11,8 +11,11 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
+        $adminId = auth()->id();
+
         $baseQuery = DB::table('distributions')
-            ->where('distributions.is_simulated', false);
+            ->where('distributions.is_simulated', false)
+            ->where('distributions.created_by', $adminId);
 
         // Ringkasan status laporan
         $summary = [
@@ -44,6 +47,7 @@ class ReportController extends Controller
                 'campaigns.id'
             )
             ->where('distributions.is_simulated', false)
+            ->where('distributions.created_by', $adminId)
             ->select(
                 'distributions.id',
                 'distributions.title',

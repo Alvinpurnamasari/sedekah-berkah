@@ -19,7 +19,7 @@ export default function BeneficiaryIndex({
     filters = {},
     summary = {},
 }) {
-    const { flash = {} } = usePage().props;
+    const { flash = {}, errors = {} } = usePage().props;
     const [showSuccess, setShowSuccess] = useState(Boolean(flash.success));
 
     useEffect(() => {
@@ -355,6 +355,16 @@ export default function BeneficiaryIndex({
                                         marginBottom: 18,
                                     }}
                                 />
+                                {errors.name && (
+                                    <small style={{
+                                        color: '#dc2626',
+                                        display: 'block',
+                                        marginTop: -12,
+                                        marginBottom: 14,
+                                    }}>
+                                        {errors.name}
+                                    </small>
+                                )}
 
                                 <label style={{ display: 'block', marginBottom: 8 }}>
                                     Deskripsi
@@ -374,6 +384,17 @@ export default function BeneficiaryIndex({
                                         marginBottom: 22,
                                     }}
                                 />
+                                
+                                {errors.description && (
+                                    <small style={{
+                                        color: '#dc2626',
+                                        display: 'block',
+                                        marginTop: -16,
+                                        marginBottom: 14,
+                                    }}>
+                                        {errors.description}
+                                    </small>
+                                )}
 
                                 <div style={{
                                     display: 'flex',

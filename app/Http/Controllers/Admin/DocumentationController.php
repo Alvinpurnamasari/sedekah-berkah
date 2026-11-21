@@ -37,7 +37,8 @@ class DocumentationController extends Controller
                 'campaigns.id as campaign_id',
                 'campaigns.title as campaign_title'
             )
-            ->where('distributions.is_simulated', false);
+            ->where('distributions.is_simulated', false)
+            ->where('distributions.created_by', auth()->id());
 
         // Filter jenis dokumentasi.
         if (in_array($request->file_type, ['photo', 'video'])) {
@@ -105,6 +106,7 @@ class DocumentationController extends Controller
                 'distributions.campaign_id'
             )
             ->where('distributions.is_simulated', false)
+            ->where('distributions.created_by', auth()->id())
             ->select('campaigns.id', 'campaigns.title')
             ->distinct()
             ->orderBy('campaigns.title')
@@ -113,6 +115,7 @@ class DocumentationController extends Controller
         // Daftar kegiatan untuk filter.
         $distributions = DB::table('distributions')
             ->where('is_simulated', false)
+            ->where('created_by', auth()->id())
             ->select('id', 'title', 'campaign_id')
             ->orderByDesc('created_at')
             ->get();
@@ -127,6 +130,7 @@ class DocumentationController extends Controller
                     'distributions.id'
                 )
                 ->where('distributions.is_simulated', false)
+                ->where('distributions.created_by', auth()->id())
                 ->count(),
 
             'photos' => DB::table('distribution_documents')
@@ -137,6 +141,7 @@ class DocumentationController extends Controller
                     'distributions.id'
                 )
                 ->where('distributions.is_simulated', false)
+                ->where('distributions.created_by', auth()->id())
                 ->where('distribution_documents.file_type', 'photo')
                 ->count(),
 
@@ -148,6 +153,7 @@ class DocumentationController extends Controller
                     'distributions.id'
                 )
                 ->where('distributions.is_simulated', false)
+                ->where('distributions.created_by', auth()->id())
                 ->where('distribution_documents.file_type', 'video')
                 ->count(),
         ];

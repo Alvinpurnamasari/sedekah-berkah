@@ -111,6 +111,18 @@ export default function TransactionShow({
                                 {statusLabels[transaction.payment_status] ||
                                     transaction.payment_status}
                             </span>
+                            {transaction.is_simulated && (
+                                <span style={{
+                                    background: '#fef3c7',
+                                    color: '#92400e',
+                                    padding: '5px 10px',
+                                    borderRadius: 6,
+                                    fontSize: 12,
+                                    fontWeight: 600,
+                                }}>
+                                    DATA SIMULASI
+                                </span>
+                            )}
                         </div>
                     </div>
 
