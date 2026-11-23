@@ -192,6 +192,11 @@ public function recordPayment(Request $request, $id)
                     ]);
                 }
 
+                if ((bool) $expense->is_simulated !== (bool) $distribution->is_simulated) {
+                    throw ValidationException::withMessages([
+                        'proof' => 'Status simulasi pengeluaran tidak sesuai dengan kegiatan penyaluran.',
+                    ]);
+                }
                 if ((string) $distribution->created_by !== (string) Auth::id()) {
                     throw ValidationException::withMessages([
                         'proof' => 'Anda tidak memiliki akses ke kegiatan penyaluran ini.',
@@ -225,17 +230,63 @@ public function recordPayment(Request $request, $id)
                 }
             }
 
+           
             // Simpan bukti pembayaran secara privat.
-            $proofPath = Storage::disk('local')->putFile(
-                'expense-payment-proofs',
-                $request->file('proof')
-            );
+            // Gambar dinormalisasi menjadi PNG agar lebih kompatibel.
+            $uploadedProof = $request->file('proof');
 
-            if (!$proofPath) {
+            $imageInfo = @getimagesize($uploadedProof->getRealPath());
+
+            if (
+                $imageInfo !== false &&
+                in_array($imageInfo['mime'], ['image/png', 'image/jpeg'], true)
+            ) {
+                $image = @imagecreatefromstring(
+                    file_get_contents($uploadedProof->getRealPath())
+                );
+
+                if ($image === false) {
+                    throw new \RuntimeException(
+                        'Bukti pembayaran tidak dapat diproses sebagai gambar.'
+                    );
+                }
+
+                ob_start();
+                $pngSaved = imagepng($image);
+                $pngContents = ob_get_clean();
+
+                imagedestroy($image);
+
+                if (!$pngSaved || $pngContents === false) {
+                    throw new \RuntimeException(
+                        'Gagal menormalisasi gambar bukti pembayaran.'
+                    );
+                }
+
+                $proofPath = 'expense-payment-proofs/'
+                    . bin2hex(random_bytes(16))
+                    . '.png';
+
+                $saved = Storage::disk('local')->put(
+                    $proofPath,
+                    $pngContents
+                );
+            } else {
+                // PDF tetap disimpan dalam format aslinya.
+                $proofPath = Storage::disk('local')->putFile(
+                    'expense-payment-proofs',
+                    $uploadedProof
+                );
+
+                $saved = (bool) $proofPath;
+            }
+
+            if (!$saved || !$proofPath) {
                 throw new \RuntimeException(
                     'Gagal menyimpan bukti pembayaran.'
                 );
             }
+
 
             // Catat pembayaran pengeluaran.
             $expense->update([
@@ -383,15 +434,13 @@ public function recordPayment(Request $request, $id)
 }
 
 
-
 /**
  * Menampilkan bukti pembayaran secara privat.
  */
 public function paymentProof($id)
 {
-    $expense = Expense::where('id', $id)
-        ->where('submitted_by', Auth::id())
-        ->firstOrFail();
+    // Admin dapat melihat bukti pembayaran seluruh pengeluaran.
+    $expense = Expense::findOrFail($id);
 
     if (
         $expense->payment_status !== 'paid' ||
@@ -401,9 +450,43 @@ public function paymentProof($id)
         abort(404, 'Bukti pembayaran tidak ditemukan.');
     }
 
-    return Storage::disk('local')->response(
-        $expense->receipt_file
-    );
+    $disk = Storage::disk('local');
+    $filePath = $disk->path($expense->receipt_file);
+
+    // Periksa apakah file merupakan gambar PNG atau JPEG.
+    $imageInfo = @getimagesize($filePath);
+
+    if (
+        $imageInfo !== false &&
+        in_array($imageInfo['mime'], ['image/png', 'image/jpeg'], true)
+    ) {
+        $image = @imagecreatefromstring(
+            file_get_contents($filePath)
+        );
+
+        if ($image === false) {
+            abort(500, 'Gambar bukti pembayaran tidak dapat diproses.');
+        }
+
+        ob_start();
+        $pngSaved = imagepng($image);
+        $pngContents = ob_get_clean();
+
+        imagedestroy($image);
+
+        if (!$pngSaved || $pngContents === false) {
+            abort(500, 'Gagal menampilkan gambar bukti pembayaran.');
+        }
+
+        return response($pngContents, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'inline; filename="bukti-pembayaran.png"',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    // PDF tetap ditampilkan menggunakan response Storage.
+    return $disk->response($expense->receipt_file);
 }
 
 }

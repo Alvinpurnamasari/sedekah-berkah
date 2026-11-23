@@ -62,7 +62,6 @@ export default function Show({
 
     const realizationForm = useForm({
         actual_quantity: distribution.actual_quantity || 0,
-        total_cost: distribution.total_cost || 0,
         status: distribution.status === 'planned'
             ? 'ongoing'
             : distribution.status,
@@ -403,24 +402,26 @@ export default function Show({
                                 </div>
 
                                 <div className="ad-dist-field">
-                                    <label>Total biaya aktual (Rp) *</label>
-                                    <input
-                                        type="number"
-                                        min="0"
-                                        value={realizationForm.data.total_cost}
-                                        onChange={e =>
-                                            realizationForm.setData(
-                                                'total_cost',
-                                                e.target.value
-                                            )
-                                        }
-                                        required
-                                    />
-                                    {realizationForm.errors.total_cost && (
-                                        <small className="ad-dist-error">
-                                            {realizationForm.errors.total_cost}
-                                        </small>
-                                    )}
+                                    <label>Total Biaya Aktual</label>
+                                    <strong>
+                                        {rupiah(
+                                            expenses
+                                                .filter(expense =>
+                                                    Number(expense.is_simulated) === 0 &&
+                                                    expense.approval_status === 'approved' &&
+                                                    expense.payment_status === 'paid'
+                                                )
+                                                .reduce(
+                                                    (total, expense) =>
+                                                        total + Number(expense.amount || 0),
+                                                    0
+                                                )
+                                        )}
+                                    </strong>
+                                    <small>
+                                        Dihitung otomatis dari pengeluaran nyata yang
+                                        sudah disetujui dan dibayar.
+                                    </small>
                                 </div>
 
                                 <div className="ad-dist-field">
@@ -674,10 +675,36 @@ export default function Show({
                                         <strong>
                                             {expense.expense_category}
                                         </strong>
+
                                         <small>
                                             {expense.description}
                                         </small>
+
+                                        <small>
+                                            Persetujuan: {
+                                                expense.approval_status === 'approved'
+                                                    ? 'Disetujui'
+                                                    : expense.approval_status === 'pending'
+                                                        ? 'Menunggu persetujuan'
+                                                        : expense.approval_status === 'rejected'
+                                                            ? 'Ditolak'
+                                                            : expense.approval_status
+                                            }
+                                        </small>
+
+                                        <small>
+                                            Pembayaran: {
+                                                expense.payment_status === 'paid'
+                                                    ? 'Sudah dibayar'
+                                                    : expense.payment_status === 'unpaid'
+                                                        ? 'Belum dibayar'
+                                                        : expense.payment_status === 'partial'
+                                                            ? 'Dibayar sebagian'
+                                                            : expense.payment_status
+                                            }
+                                        </small>
                                     </span>
+
                                     <strong>
                                         {rupiah(expense.amount)}
                                     </strong>

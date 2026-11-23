@@ -265,76 +265,101 @@ class DistributionController extends Controller
     /**
      * Menyimpan realisasi kegiatan.
      */
-    public function saveRealization(Request $request, string $id)
-    {
-        $validated = $request->validate([
-            'actual_quantity' => ['required', 'integer', 'min:0'],
-            'total_cost' => ['required', 'integer', 'min:0'],
-            'status' => ['required', 'in:ongoing,completed'],
-        ]);
+    
+public function saveRealization(Request $request, string $id)
+{
+    $validated = $request->validate([
+        'actual_quantity' => ['required', 'integer', 'min:0'],
+        'status' => ['required', 'in:ongoing,completed'],
+    ]);
 
-        DB::transaction(function () use ($validated, $id, $request) {
-            $distribution = DB::table('distributions')
-                ->where('id', $id)
-                ->lockForUpdate()
-                ->first();
+    DB::transaction(function () use ($validated, $id, $request) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
 
-                abort_if(!$distribution, 404);
+        abort_if(!$distribution, 404);
 
-                abort_if(
-                    (string) $distribution->created_by !== (string) auth()->id(),
-                    403,
-                    'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
-                );
+        abort_if(
+            (string) $distribution->created_by !== (string) auth()->id(),
+            403,
+            'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+        );
 
-                abort_if(
-                    $distribution->budget_status !== 'approved',
-                    403,
-                    'Realisasi belum dapat dilakukan karena anggaran belum disetujui Superadmin.'
-                );
-                
-                abort_if(
-                    !in_array($distribution->status, ['planned', 'ongoing']) ||
-                    !in_array($distribution->report_status, ['draft', 'revision']),
-                    403,
-                    'Realisasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
-            );
+        abort_if(
+            (bool) $distribution->is_simulated,
+            403,
+            'Data simulasi tidak dapat dicatat sebagai realisasi keuangan.'
+        );
 
-            $before = [
-                'actual_quantity' => $distribution->actual_quantity,
-                'total_cost' => $distribution->total_cost,
-                'status' => $distribution->status,
-            ];
+        abort_if(
+            $distribution->budget_status !== 'approved',
+            403,
+            'Realisasi belum dapat dilakukan karena anggaran belum disetujui Superadmin.'
+        );
 
-            DB::table('distributions')
-                ->where('id', $id)
-                ->update([
-                    'actual_quantity' => $validated['actual_quantity'],
-                    'total_cost' => $validated['total_cost'],
-                    'status' => $validated['status'],
-                    'updated_at' => now(),
-                ]);
+        abort_if(
+            !in_array($distribution->status, ['planned', 'ongoing']) ||
+            !in_array($distribution->report_status, ['draft', 'revision']),
+            403,
+            'Realisasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
+        );
 
-            DB::table('audit_logs')->insert([
-                'user_id' => auth()->id(),
-                'action' => 'distribution_realization_updated',
-                'entity_type' => 'distribution',
-                'entity_id' => $id,
-                'metadata' => json_encode([
-                    'before' => $before,
-                    'after' => $validated,
-                    'actor' => 'admin',
-                ]),
-                'ip_address' => $request->ip(),
-                'created_at' => now(),
+        // Hitung pengeluaran nyata yang sudah disetujui dan dibayar.
+        $paidTotal = (int) DB::table('expenses')
+            ->where('distribution_id', $id)
+            ->where('approval_status', 'approved')
+            ->where('payment_status', 'paid')
+            ->where('is_simulated', false)
+            ->sum('amount');
+
+        $approvedBudget = (int) $distribution->approved_budget;
+
+        abort_if(
+            $paidTotal > $approvedBudget,
+            422,
+            'Total pengeluaran yang dibayar melebihi anggaran yang disetujui.'
+        );
+
+        $before = [
+            'actual_quantity' => $distribution->actual_quantity,
+            'total_cost' => $distribution->total_cost,
+            'status' => $distribution->status,
+        ];
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'actual_quantity' => $validated['actual_quantity'],
+                'total_cost' => $paidTotal,
+                'status' => $validated['status'],
                 'updated_at' => now(),
             ]);
-        });
 
-        return redirect()
-            ->route('admin.distributions.show', $id)
-            ->with('success', 'Realisasi penyaluran berhasil disimpan.');
-    }
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_realization_updated',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'before' => $before,
+                'after' => [
+                    'actual_quantity' => $validated['actual_quantity'],
+                    'total_cost' => $paidTotal,
+                    'status' => $validated['status'],
+                ],
+            ]),
+            'ip_address' => $request->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('admin.distributions.show', $id)
+        ->with('success', 'Realisasi penyaluran berhasil disimpan.');
+}
 
 
 /**
@@ -496,70 +521,84 @@ public function uploadDocument(Request $request, string $id)
     /**
      * Mengajukan laporan kepada Superadmin.
      */
-    public function submitReport(string $id)
-    {
-        DB::transaction(function () use ($id) {
-            $distribution = DB::table('distributions')
-                ->where('id', $id)
-                ->lockForUpdate()
-                ->first();
+    
+public function submitReport(string $id)
+{
+    DB::transaction(function () use ($id) {
+        $distribution = DB::table('distributions')
+            ->where('id', $id)
+            ->lockForUpdate()
+            ->first();
 
-            abort_if(!$distribution, 404);
+        abort_if(!$distribution, 404);
 
-            abort_if(
-                (string) $distribution->created_by !== (string) auth()->id(),
-                403,
-                'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
-            );
+        abort_if(
+            (string) $distribution->created_by !== (string) auth()->id(),
+            403,
+            'Anda tidak memiliki akses ke kegiatan penyaluran ini.'
+        );
 
-            abort_if(
-                $distribution->status !== 'completed',
-                422,
-                'Kegiatan harus berstatus selesai sebelum laporan diajukan.'
-            );
+        abort_if(
+            (bool) $distribution->is_simulated,
+            403,
+            'Data simulasi tidak dapat diajukan sebagai laporan nyata.'
+        );
 
-            abort_if(
-                !in_array($distribution->report_status, ['draft', 'revision']),
-                403,
-                'Laporan sudah diajukan atau sudah disetujui.'
-            );
+        abort_if(
+            $distribution->budget_status !== 'approved',
+            422,
+            'Anggaran harus disetujui Superadmin sebelum laporan diajukan.'
+        );
 
-            $documentCount = DB::table('distribution_documents')
-                ->where('distribution_id', $id)
-                ->count();
+        abort_if(
+            $distribution->status !== 'completed',
+            422,
+            'Kegiatan harus berstatus selesai sebelum laporan diajukan.'
+        );
 
-            abort_if(
-                $documentCount < 1,
-                422,
-                'Unggah minimal satu dokumentasi sebelum mengajukan laporan.'
-            );
+        abort_if(
+            !in_array($distribution->report_status, ['draft', 'revision']),
+            403,
+            'Laporan sudah diajukan atau sudah disetujui.'
+        );
 
-            DB::table('distributions')
-                ->where('id', $id)
-                ->update([
-                    'report_status' => 'pending',
-                    'updated_at' => now(),
-                ]);
+        $documentCount = DB::table('distribution_documents')
+            ->where('distribution_id', $id)
+            ->count();
 
-            DB::table('audit_logs')->insert([
-                'user_id' => auth()->id(),
-                'action' => 'distribution_report_submitted',
-                'entity_type' => 'distribution',
-                'entity_id' => $id,
-                'metadata' => json_encode([
-                    'title' => $distribution->title,
-                    'actual_quantity' => $distribution->actual_quantity,
-                    'total_cost' => $distribution->total_cost,
-                    'document_count' => $documentCount,
-                ]),
-                'ip_address' => request()->ip(),
-                'created_at' => now(),
+        abort_if(
+            $documentCount < 1,
+            422,
+            'Unggah minimal satu dokumentasi sebelum mengajukan laporan.'
+        );
+
+        DB::table('distributions')
+            ->where('id', $id)
+            ->update([
+                'report_status' => 'pending',
                 'updated_at' => now(),
             ]);
-        });
 
-        return redirect()
-            ->route('admin.distributions.show', $id)
-            ->with('success', 'Laporan penyaluran berhasil diajukan kepada Superadmin.');
-    }
+        DB::table('audit_logs')->insert([
+            'user_id' => auth()->id(),
+            'action' => 'distribution_report_submitted',
+            'entity_type' => 'distribution',
+            'entity_id' => $id,
+            'metadata' => json_encode([
+                'title' => $distribution->title,
+                'actual_quantity' => $distribution->actual_quantity,
+                'total_cost' => $distribution->total_cost,
+                'document_count' => $documentCount,
+            ]),
+            'ip_address' => request()->ip(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    });
+
+    return redirect()
+        ->route('admin.distributions.show', $id)
+        ->with('success', 'Laporan penyaluran berhasil diajukan kepada Superadmin.');
+}
+
 }

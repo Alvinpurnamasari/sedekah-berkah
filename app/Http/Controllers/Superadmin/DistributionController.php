@@ -488,9 +488,10 @@ public function saveRealization(Request $request, string $id)
         );
 
         abort_if(
-            !in_array($distribution->status, ['planned', 'ongoing']),
+            !in_array($distribution->status, ['planned', 'ongoing']) ||
+            !in_array($distribution->report_status, ['draft', 'revision']),
             403,
-            'Realisasi tidak dapat diubah untuk kegiatan ini.'
+            'Realisasi tidak dapat diubah karena laporan sudah diajukan atau disetujui.'
         );
 
         // Hitung hanya pengeluaran nyata yang sudah disetujui dan dibayar.
@@ -674,6 +675,7 @@ public function deleteDocument(string $id, int $documentId)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Dokumentasi berhasil dihapus.');
 }
+
 public function approveReport(string $id)
 {
     DB::transaction(function () use ($id) {
@@ -684,10 +686,43 @@ public function approveReport(string $id)
 
         abort_if(!$distribution, 404);
 
+        // Data simulasi tidak boleh disetujui.
+        abort_if(
+            (bool) $distribution->is_simulated,
+            403,
+            'Data simulasi tidak dapat disetujui.'
+        );
+
+        // Penyaluran harus sudah selesai.
+        abort_if(
+            $distribution->status !== 'completed',
+            403,
+            'Penyaluran harus selesai sebelum laporan disetujui.'
+        );
+
+        // Anggaran harus sudah disetujui.
+        abort_if(
+            $distribution->budget_status !== 'approved',
+            403,
+            'Anggaran penyaluran belum disetujui.'
+        );
+
+        // Laporan harus menunggu pemeriksaan.
         abort_if(
             $distribution->report_status !== 'pending',
             403,
             'Laporan ini tidak sedang menunggu pemeriksaan.'
+        );
+
+        // Harus memiliki minimal satu dokumentasi.
+        $hasDocuments = DB::table('distribution_documents')
+            ->where('distribution_id', $id)
+            ->exists();
+
+        abort_if(
+            !$hasDocuments,
+            403,
+            'Laporan harus memiliki minimal satu dokumentasi.'
         );
 
         DB::table('distributions')
@@ -720,6 +755,7 @@ public function approveReport(string $id)
         ->route('superadmin.distributions.show', $id)
         ->with('success', 'Laporan penyaluran berhasil disetujui.');
 }
+
 
 
 public function requestRevision(Request $request, string $id)

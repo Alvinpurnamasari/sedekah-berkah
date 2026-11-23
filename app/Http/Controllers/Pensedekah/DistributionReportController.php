@@ -10,8 +10,8 @@ class DistributionReportController extends Controller
 {
     public function index()
     {
-        // Hanya laporan nyata yang selesai, disetujui,
-        // dan sudah dipublikasikan.
+        // Hanya laporan nyata yang selesai,
+        // disetujui, dan sudah dipublikasikan.
         $reports = DB::table('distributions')
             ->leftJoin(
                 'campaigns',
@@ -39,12 +39,14 @@ class DistributionReportController extends Controller
 
         $reportIds = $reports->pluck('id');
 
-        // Rincian pengeluaran yang sudah disetujui.
+        // Pengeluaran nyata yang sudah disetujui.
+        // Pengeluaran nyata yang sudah disetujui dan dibayar.
         $detailExpenses = DB::table('expenses')
-            ->whereIn('distribution_id', $reportIds)
-            ->where('expense_type', 'distribution_detail')
-            ->where('approval_status', 'approved')
-            ->where('is_simulated', false)
+        ->whereIn('distribution_id', $reportIds)
+        ->where('expense_type', 'distribution_detail')
+        ->where('approval_status', 'approved')
+        ->where('payment_status', 'paid')
+        ->where('is_simulated', false)
             ->select(
                 'id',
                 'distribution_id',
@@ -56,10 +58,18 @@ class DistributionReportController extends Controller
             ->get()
             ->groupBy('distribution_id');
 
-        // Dokumentasi laporan penyaluran.
+        // Dokumentasi foto dan video.
         $documents = DB::table('distribution_documents')
             ->whereIn('distribution_id', $reportIds)
-            ->orderByDesc('created_at')
+            ->select(
+                'id',
+                'distribution_id',
+                'file_path',
+                'file_type',
+                'caption',
+                'document_date'
+            )
+            ->orderByDesc('document_date')
             ->get()
             ->groupBy('distribution_id');
 
