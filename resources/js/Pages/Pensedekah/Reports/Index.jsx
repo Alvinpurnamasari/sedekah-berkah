@@ -546,40 +546,103 @@ export default function Index({ reports = [], summary = {} }) {
                             </article>
                         ))}
                     </div>
+                
                 ) : (
                     <div
                         style={{
                             background: '#fff',
                             border: '1px solid #e5e7eb',
-                            borderRadius: 14,
-                            padding: 40,
+                            borderRadius: 16,
+                            padding: '36px 24px',
                             textAlign: 'center',
+                            minHeight: 230,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
                         }}
                     >
-                        <FileText
-                            size={42}
-                            color="#94a3b8"
-                            style={{ marginBottom: 12 }}
-                        />
+                        <div
+                            style={{
+                                width: 76,
+                                height: 76,
+                                borderRadius: 22,
+                                background: '#e8f5ed',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginBottom: 20,
+                            }}
+                        >
+                            <FileText size={36} color="#176b45" strokeWidth={1.8} />
+                        </div>
 
-                        <h3 style={{ color: '#334155' }}>
+                        <span
+                            style={{
+                                display: 'inline-block',
+                                background: '#f0fdf4',
+                                color: '#176b45',
+                                borderRadius: 20,
+                                padding: '6px 13px',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                marginBottom: 12,
+                            }}
+                        >
+                            INFORMASI LAPORAN
+                        </span>
+
+                        <h3
+                            style={{
+                                color: '#1e293b',
+                                fontSize: 18,
+                                fontWeight: 700,
+                                margin: '0 0 10px',
+                            }}
+                        >
                             Belum Ada Laporan Penyaluran
                         </h3>
 
                         <p
                             style={{
                                 color: '#64748b',
-                                maxWidth: 450,
-                                margin: '0 auto',
-                                lineHeight: 1.6,
+                                fontSize: 14,
+                                maxWidth: 480,
+                                margin: 0,
+                                lineHeight: 1.7,
                             }}
                         >
-                            Laporan penyaluran yang telah selesai,
-                            disetujui, dan dipublikasikan oleh Superadmin
-                            akan ditampilkan di halaman ini.
+                            Saat ini belum ada laporan kegiatan penyaluran yang
+                            tersedia. Laporan akan ditampilkan setelah kegiatan
+                            selesai, diperiksa, disetujui, dan dipublikasikan
+                            oleh Superadmin.
                         </p>
+
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 7,
+                                marginTop: 20,
+                                color: '#176b45',
+                                fontSize: 12,
+                                fontWeight: 600,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    width: 7,
+                                    height: 7,
+                                    borderRadius: '50%',
+                                    background: '#16a34a',
+                                }}
+                            />
+                            Informasi laporan akan diperbarui secara otomatis
+                        </div>
                     </div>
                 )}
+
             </div>
         </PensedekahLayout>
     );

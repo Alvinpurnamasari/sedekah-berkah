@@ -57,11 +57,16 @@ export default function PensedekahLayout({
 
     const currentPath = currentUrl.split('?')[0];
 
-    const detectedActiveMenu =
-        currentPath === '/akun'
-            ? 'dashboard'
-            : currentPath.startsWith('/akun/donasi')
-                ? 'donations'
+    
+const detectedActiveMenu =
+currentPath === '/akun'
+    ? 'dashboard'
+    : currentPath.startsWith('/akun/donasi')
+        ? 'donations'
+        : currentPath.startsWith('/akun/penyaluran')
+            ? 'reports'
+            : currentPath.startsWith('/akun/profil')
+                ? 'profile'
                 : null;
 
     const initials = (user?.name || 'Pensedekah')
