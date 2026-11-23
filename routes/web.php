@@ -190,7 +190,11 @@ Route::middleware('auth')->group(function () {
             'updatePassword'
         ])->name('pensedekah.profile.password');
 
-
+        // Laporan penyaluran
+        Route::get('/akun/penyaluran', [
+            \App\Http\Controllers\Pensedekah\DistributionReportController::class,
+            'index'
+        ])->name('pensedekah.reports.index');
     });
 
 

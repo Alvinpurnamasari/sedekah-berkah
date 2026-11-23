@@ -34,7 +34,7 @@ const menus = [
         id: 'reports',
         label: 'Laporan Penyaluran',
         icon: FileText,
-        url: null,
+        url: '/akun/penyaluran',
     },
     {
         id: 'profile',
