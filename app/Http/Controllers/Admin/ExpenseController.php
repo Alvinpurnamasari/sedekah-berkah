@@ -434,59 +434,38 @@ public function recordPayment(Request $request, $id)
 }
 
 
+
 /**
  * Menampilkan bukti pembayaran secara privat.
  */
-public function paymentProof($id)
+public function paymentProof(string $id)
 {
-    // Admin dapat melihat bukti pembayaran seluruh pengeluaran.
     $expense = Expense::findOrFail($id);
 
-    if (
-        $expense->payment_status !== 'paid' ||
-        !$expense->receipt_file ||
-        !Storage::disk('local')->exists($expense->receipt_file)
-    ) {
-        abort(404, 'Bukti pembayaran tidak ditemukan.');
-    }
+    abort_unless(
+        $expense->payment_status === 'paid'
+        && $expense->receipt_file
+        && Storage::disk('local')->exists($expense->receipt_file),
+        404,
+        'Bukti pembayaran tidak ditemukan.'
+    );
 
     $disk = Storage::disk('local');
-    $filePath = $disk->path($expense->receipt_file);
+    $path = $disk->path($expense->receipt_file);
+    $mimeType = $disk->mimeType($expense->receipt_file);
+    $fileName = basename($expense->receipt_file);
 
-    // Periksa apakah file merupakan gambar PNG atau JPEG.
-    $imageInfo = @getimagesize($filePath);
-
-    if (
-        $imageInfo !== false &&
-        in_array($imageInfo['mime'], ['image/png', 'image/jpeg'], true)
-    ) {
-        $image = @imagecreatefromstring(
-            file_get_contents($filePath)
-        );
-
-        if ($image === false) {
-            abort(500, 'Gambar bukti pembayaran tidak dapat diproses.');
-        }
-
-        ob_start();
-        $pngSaved = imagepng($image);
-        $pngContents = ob_get_clean();
-
-        imagedestroy($image);
-
-        if (!$pngSaved || $pngContents === false) {
-            abort(500, 'Gagal menampilkan gambar bukti pembayaran.');
-        }
-
-        return response($pngContents, 200, [
-            'Content-Type' => 'image/png',
-            'Content-Disposition' => 'inline; filename="bukti-pembayaran.png"',
-            'Cache-Control' => 'private, no-store',
-        ]);
+    // Bersihkan output buffer sebelum mengirim file.
+    while (ob_get_level() > 0) {
+        ob_end_clean();
     }
 
-    // PDF tetap ditampilkan menggunakan response Storage.
-    return $disk->response($expense->receipt_file);
+    return response()->file($path, [
+        'Content-Type' => $mimeType,
+        'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        'Cache-Control' => 'private, no-store',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
 }
 
 }
