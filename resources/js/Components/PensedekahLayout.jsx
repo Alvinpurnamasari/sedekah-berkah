@@ -9,13 +9,12 @@ import {
     LogOut,
     Menu,
     X,
-    Bell,
     HeartHandshake,
     ShieldCheck,
+    Megaphone,
 } from 'lucide-react';
 
 import '../../css/pensedekah.css';
-
 
 const menus = [
     {
@@ -31,6 +30,12 @@ const menus = [
         url: '/akun/donasi',
     },
     {
+        id: 'programs',
+        label: 'Program',
+        icon: Megaphone,
+        url: '/akun/program',
+    },
+    {
         id: 'reports',
         label: 'Laporan Penyaluran',
         icon: FileText,
@@ -44,7 +49,6 @@ const menus = [
     },
 ];
 
-
 export default function PensedekahLayout({
     title,
     activeMenu,
@@ -57,17 +61,18 @@ export default function PensedekahLayout({
 
     const currentPath = currentUrl.split('?')[0];
 
-    
-const detectedActiveMenu =
-currentPath === '/akun'
-    ? 'dashboard'
-    : currentPath.startsWith('/akun/donasi')
-        ? 'donations'
-        : currentPath.startsWith('/akun/penyaluran')
-            ? 'reports'
-            : currentPath.startsWith('/akun/profil')
-                ? 'profile'
-                : null;
+    const detectedActiveMenu =
+        currentPath === '/akun'
+            ? 'dashboard'
+            : currentPath.startsWith('/akun/donasi')
+                ? 'donations'
+                : currentPath.startsWith('/akun/program')
+                    ? 'programs'
+                    : currentPath.startsWith('/akun/penyaluran')
+                        ? 'reports'
+                        : currentPath.startsWith('/akun/profil')
+                            ? 'profile'
+                            : null;
 
     const initials = (user?.name || 'Pensedekah')
         .split(' ')
@@ -131,7 +136,8 @@ currentPath === '/akun'
                     <nav className="pd-navigation">
                         {menus.map(item => {
                             const Icon = item.icon;
-                            const active = (activeMenu || detectedActiveMenu) === item.id;
+                            const active =
+                                (activeMenu || detectedActiveMenu) === item.id;
 
                             return (
                                 <button

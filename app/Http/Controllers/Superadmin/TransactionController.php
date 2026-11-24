@@ -200,25 +200,43 @@ class TransactionController extends Controller
     }
     
 
-public function proof(string $id)
-{
-    $donation = DB::table('donations')
-        ->where('id', $id)
-        ->first(['id', 'transfer_proof']);
 
-    abort_if(!$donation || !$donation->transfer_proof, 404);
-
-    $disk = Storage::disk('local');
-
-    abort_unless(
-        $disk->exists($donation->transfer_proof),
-        404
-    );
-
-    return $disk->response(
-        $donation->transfer_proof
-    );
-}
+    public function proof(string $id)
+    {
+        $donation = DB::table('donations')
+            ->where('id', $id)
+            ->first(['id', 'transfer_proof']);
+    
+        abort_if(
+            !$donation || !$donation->transfer_proof,
+            404
+        );
+    
+        $disk = Storage::disk('local');
+    
+        abort_unless(
+            $disk->exists($donation->transfer_proof),
+            404,
+            'File bukti transfer tidak ditemukan.'
+        );
+    
+        $path = $disk->path($donation->transfer_proof);
+        $mimeType = $disk->mimeType($donation->transfer_proof);
+        $fileName = basename($donation->transfer_proof);
+    
+        // Bersihkan output buffer sebelum mengirim gambar.
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+    
+        return response()->file($path, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+    
 /**
  * Menyetujui bukti transfer manual dan membuat jurnal.
  */

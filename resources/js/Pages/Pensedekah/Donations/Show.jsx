@@ -1,6 +1,6 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from '@inertiajs/react';
+import axios from 'axios';
 import PensedekahLayout from '../../../Components/PensedekahLayout';
 
 const formatRupiah = (value) =>
@@ -95,14 +95,71 @@ function DetailRow({ label, value }) {
 }
 
 export default function Show({ donation }) {
+    const [hasProof, setHasProof] = useState(Boolean(donation.transfer_proof));
+    const [proofStatus, setProofStatus] = useState(donation.proof_status);
+    const [proofUploadedAt, setProofUploadedAt] = useState(donation.proof_uploaded_at);
+    const [proofFile, setProofFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const [uploadSuccess, setUploadSuccess] = useState('');
+
     const total =
         Number(donation.donation_amount || 0) +
         Number(donation.operational_support || 0);
 
-    // URL untuk melihat bukti transfer melalui route yang dilindungi login.
-    const proofUrl = donation.transfer_proof
+    const proofUrl = hasProof
         ? `/akun/donasi/${encodeURIComponent(donation.donation_code)}/bukti`
         : null;
+
+        const handleUploadProof = async (event) => {
+            event.preventDefault();
+        
+            if (!proofFile) {
+                setUploadError('Silakan pilih gambar bukti transfer terlebih dahulu.');
+                return;
+            }
+        
+            const formData = new FormData();
+            formData.append('proof', proofFile);
+        
+            setUploading(true);
+            setUploadError('');
+            setUploadSuccess('');
+        
+            try {
+                const response = await axios.post(
+                    `/api/v1/donations/${encodeURIComponent(donation.donation_code)}/proof`,
+                    formData,
+                    {
+                        headers: {
+                            Accept: 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    }
+                );
+        
+                const result = response.data;
+        
+                setHasProof(true);
+                setProofStatus(result.data.proof_status);
+                setProofUploadedAt(result.data.proof_uploaded_at);
+                setProofFile(null);
+        
+                setUploadSuccess(
+                    result.message || 'Bukti transfer berhasil diunggah.'
+                );
+            } catch (error) {
+                const result = error.response?.data;
+        
+                setUploadError(
+                    result?.errors?.proof?.[0] ||
+                    result?.message ||
+                    'Gagal mengunggah bukti transfer.'
+                );
+            } finally {
+                setUploading(false);
+            }
+        };
 
     return (
         <PensedekahLayout title="Detail Donasi">
@@ -172,9 +229,9 @@ export default function Show({ donation }) {
                     }}>
                         <StatusBadge status={donation.payment_status} />
 
-                        {donation.proof_status && (
+                        {proofStatus && (
                             <StatusBadge
-                                status={donation.proof_status}
+                                status={proofStatus}
                                 type="proof"
                             />
                         )}
@@ -317,10 +374,10 @@ export default function Show({ donation }) {
                     <DetailRow
                         label="Status Bukti Transfer"
                         value={
-                            donation.proof_status
+                            proofStatus
                                 ? (
                                     <StatusBadge
-                                        status={donation.proof_status}
+                                        status={proofStatus}
                                         type="proof"
                                     />
                                 )
@@ -330,7 +387,7 @@ export default function Show({ donation }) {
 
                     <DetailRow
                         label="Tanggal Upload"
-                        value={formatDate(donation.proof_uploaded_at)}
+                        value={formatDate(proofUploadedAt)}
                     />
 
                     <DetailRow
@@ -382,13 +439,100 @@ export default function Show({ donation }) {
                                 </span>
                             </a>
                         ) : (
-                            <p style={{
-                                color: '#94a3b8',
-                                fontSize: 14,
-                                margin: 0,
-                            }}>
-                                Belum ada bukti transfer yang diunggah.
-                            </p>
+                            <>
+                                <p style={{
+                                    color: '#94a3b8',
+                                    fontSize: 14,
+                                    margin: '0 0 16px',
+                                }}>
+                                    Belum ada bukti transfer yang diunggah.
+                                </p>
+
+                                {donation.payment_status === 'pending' && (
+                                    <form onSubmit={handleUploadProof}>
+                                        <div style={{
+                                            background: '#f8fafc',
+                                            border: '1px dashed #94a3b8',
+                                            borderRadius: 10,
+                                            padding: 20,
+                                        }}>
+                                            <label style={{
+                                                display: 'block',
+                                                color: '#334155',
+                                                fontWeight: 600,
+                                                marginBottom: 10,
+                                            }}>
+                                                Pilih Bukti Transfer
+                                            </label>
+
+                                            <input
+                                                type="file"
+                                                accept="image/jpeg,image/png"
+                                                onChange={(event) => {
+                                                    setProofFile(event.target.files?.[0] || null);
+                                                    setUploadError('');
+                                                    setUploadSuccess('');
+                                                }}
+                                                style={{
+                                                    display: 'block',
+                                                    width: '100%',
+                                                    marginBottom: 12,
+                                                }}
+                                            />
+
+                                            <p style={{
+                                                color: '#64748b',
+                                                fontSize: 12,
+                                                marginBottom: 15,
+                                            }}>
+                                                Format JPG, JPEG, atau PNG. Maksimal 2 MB.
+                                            </p>
+
+                                            {proofFile && (
+                                                <p style={{ fontSize: 13, color: '#334155' }}>
+                                                    File dipilih: {proofFile.name}
+                                                </p>
+                                            )}
+
+                                            {uploadError && (
+                                                <p style={{
+                                                    color: '#dc2626',
+                                                    fontSize: 13,
+                                                    marginBottom: 12,
+                                                }}>
+                                                    {uploadError}
+                                                </p>
+                                            )}
+
+                                            {uploadSuccess && (
+                                                <p style={{
+                                                    color: '#15803d',
+                                                    fontSize: 13,
+                                                    marginBottom: 12,
+                                                }}>
+                                                    {uploadSuccess}
+                                                </p>
+                                            )}
+
+                                            <button
+                                                type="submit"
+                                                disabled={uploading || !proofFile}
+                                                style={{
+                                                    background: uploading || !proofFile ? '#94a3b8' : '#176b45',
+                                                    color: '#fff',
+                                                    border: 'none',
+                                                    borderRadius: 8,
+                                                    padding: '12px 20px',
+                                                    fontWeight: 600,
+                                                    cursor: uploading || !proofFile ? 'not-allowed' : 'pointer',
+                                                }}
+                                            >
+                                                {uploading ? 'Mengunggah...' : 'Upload Bukti Pembayaran'}
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+                            </>
                         )}
                     </div>
 
