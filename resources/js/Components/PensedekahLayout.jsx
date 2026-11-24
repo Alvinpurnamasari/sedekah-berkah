@@ -13,6 +13,7 @@ import {
     ShieldCheck,
     Megaphone,
     MapPinned,
+    Images,
 } from 'lucide-react';
 
 import '../../css/pensedekah.css';
@@ -43,16 +44,22 @@ const menus = [
         url: '/akun/penyaluran',
     },
     {
-        id: 'profile',
-        label: 'Profil Saya',
-        icon: UserRound,
-        url: '/akun/profil',
+        id: 'documentation',
+        label: 'Dokumentasi',
+        icon: Images,
+        url: '/akun/dokumentasi',
     },
     {
         id: 'tracking',
         label: 'Tracking Penyaluran',
         icon: MapPinned,
         url: '/akun/tracking',
+    },
+    {
+        id: 'profile',
+        label: 'Profil Saya',
+        icon: UserRound,
+        url: '/akun/profil',
     },
 ];
 
@@ -77,11 +84,13 @@ export default function PensedekahLayout({
                     ? 'programs'
                     : currentPath.startsWith('/akun/tracking')
                         ? 'tracking'
-                        : currentPath.startsWith('/akun/penyaluran')
-                            ? 'reports'
-                            : currentPath.startsWith('/akun/profil')
-                                ? 'profile'
-                                : null;
+                        : currentPath.startsWith('/akun/dokumentasi')
+                            ? 'documentation'
+                            : currentPath.startsWith('/akun/penyaluran')
+                                ? 'reports'
+                                : currentPath.startsWith('/akun/profil')
+                                    ? 'profile'
+                                    : null;
 
     const initials = (user?.name || 'Pensedekah')
         .split(' ')

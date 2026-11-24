@@ -203,10 +203,16 @@ Route::middleware('auth')->group(function () {
         ])->name('pensedekah.reports.index');
 
         // Tracking penyaluran sedekah
-    Route::get('/akun/tracking', [
-        \App\Http\Controllers\Pensedekah\TrackingController::class,
-        'index'
-    ])->name('pensedekah.tracking.index');
+        Route::get('/akun/tracking', [
+            \App\Http\Controllers\Pensedekah\TrackingController::class,
+            'index'
+        ])->name('pensedekah.tracking.index');
+
+        // Dokumentasi penyaluran
+        Route::get('/akun/dokumentasi', [
+            \App\Http\Controllers\Pensedekah\DocumentationController::class,
+            'index'
+        ])->name('pensedekah.documentation.index');
     });
 
 
