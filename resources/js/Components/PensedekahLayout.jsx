@@ -12,6 +12,7 @@ import {
     HeartHandshake,
     ShieldCheck,
     Megaphone,
+    MapPinned,
 } from 'lucide-react';
 
 import '../../css/pensedekah.css';
@@ -47,6 +48,12 @@ const menus = [
         icon: UserRound,
         url: '/akun/profil',
     },
+    {
+        id: 'tracking',
+        label: 'Tracking Penyaluran',
+        icon: MapPinned,
+        url: '/akun/tracking',
+    },
 ];
 
 export default function PensedekahLayout({
@@ -68,11 +75,13 @@ export default function PensedekahLayout({
                 ? 'donations'
                 : currentPath.startsWith('/akun/program')
                     ? 'programs'
-                    : currentPath.startsWith('/akun/penyaluran')
-                        ? 'reports'
-                        : currentPath.startsWith('/akun/profil')
-                            ? 'profile'
-                            : null;
+                    : currentPath.startsWith('/akun/tracking')
+                        ? 'tracking'
+                        : currentPath.startsWith('/akun/penyaluran')
+                            ? 'reports'
+                            : currentPath.startsWith('/akun/profil')
+                                ? 'profile'
+                                : null;
 
     const initials = (user?.name || 'Pensedekah')
         .split(' ')

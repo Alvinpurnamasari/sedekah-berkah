@@ -201,6 +201,12 @@ Route::middleware('auth')->group(function () {
             \App\Http\Controllers\Pensedekah\DistributionReportController::class,
             'index'
         ])->name('pensedekah.reports.index');
+
+        // Tracking penyaluran sedekah
+    Route::get('/akun/tracking', [
+        \App\Http\Controllers\Pensedekah\TrackingController::class,
+        'index'
+    ])->name('pensedekah.tracking.index');
     });
 
 
