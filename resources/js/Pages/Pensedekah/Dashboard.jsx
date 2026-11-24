@@ -10,6 +10,10 @@ import {
     CheckCircle,
     Clock,
     HandHeart,
+    Images,
+    MapPinned,
+    Megaphone,
+    PackageCheck,
 } from 'lucide-react';
 
 import PensedekahLayout from '@/Components/PensedekahLayout';
@@ -54,13 +58,45 @@ const paymentStatus = {
     },
 };
 
+const quickLinks = [
+    {
+        title: 'Riwayat Donasi',
+        description: 'Lihat daftar donasi dan status pembayaran Anda.',
+        label: 'Lihat Riwayat',
+        url: '/akun/donasi',
+        icon: History,
+    },
+    {
+        title: 'Laporan Penyaluran',
+        description: 'Lihat laporan kegiatan dan penggunaan dana.',
+        label: 'Lihat Laporan',
+        url: '/akun/penyaluran',
+        icon: FileText,
+    },
+    {
+        title: 'Dokumentasi',
+        description: 'Lihat foto dan video kegiatan penyaluran.',
+        label: 'Lihat Dokumentasi',
+        url: '/akun/dokumentasi',
+        icon: Images,
+    },
+    {
+        title: 'Tracking Penyaluran',
+        description: 'Pantau tahapan perkembangan penyaluran.',
+        label: 'Lihat Tracking',
+        url: '/akun/tracking',
+        icon: MapPinned,
+    },
+];
+
 export default function Dashboard({
     summary = {},
+    distributionSummary = {},
     recentDonations = [],
 }) {
     const statistics = [
         {
-            label: 'Total Donasi',
+            label: 'Total Transaksi',
             value: summary.totalDonations ?? 0,
             icon: Heart,
         },
@@ -101,7 +137,7 @@ export default function Dashboard({
                 </div>
             </div>
 
-            {/* Statistik */}
+            {/* Statistik Donasi */}
             <div className="pd-dashboard-stats">
                 {statistics.map((item, index) => {
                     const Icon = item.icon;
@@ -129,43 +165,117 @@ export default function Dashboard({
                     <p>Program yang Pernah Didukung</p>
                     <h3>{summary.totalCampaigns ?? 0} Program</h3>
                 </div>
-            </div>
 
-            {/* Navigasi */}
-            <div className="pd-dashboard-grid">
                 <Link
-                    href="/akun/donasi"
-                    className="pd-dashboard-card"
+                    href="/akun/program"
+                    style={{
+                        marginLeft: 'auto',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        color: '#176b45',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: 'none',
+                    }}
                 >
-                    <div className="pd-dashboard-card-icon">
-                        <History size={24} />
-                    </div>
-
-                    <h3>Riwayat Donasi</h3>
-
-                    <p>
-                        Lihat daftar donasi dan status pembayaran Anda.
-                    </p>
-
-                    <span>
-                        Lihat Riwayat <ArrowRight size={16} />
-                    </span>
+                    Lihat Program <ArrowRight size={16} />
                 </Link>
+            </div>
 
-                <div className="pd-dashboard-card">
-                    <div className="pd-dashboard-card-icon">
-                        <FileText size={24} />
+            {/* Akses Cepat */}
+            <section style={{ marginTop: 28 }}>
+                <div className="pd-section-heading">
+                    <div>
+                        <h3>Akses Cepat</h3>
+                        <p>
+                            Akses informasi donasi dan penyaluran Anda.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="pd-dashboard-grid">
+                    {quickLinks.map((item) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <Link
+                                key={item.url}
+                                href={item.url}
+                                className="pd-dashboard-card"
+                                style={{
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                }}
+                            >
+                                <div className="pd-dashboard-card-icon">
+                                    <Icon size={24} />
+                                </div>
+
+                                <h3>{item.title}</h3>
+
+                                <p>{item.description}</p>
+
+                                <span>
+                                    {item.label}
+                                    <ArrowRight size={16} />
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* Status Penyaluran */}
+            <section style={{ marginTop: 28 }}>
+                <div className="pd-section-heading">
+                    <div>
+                        <h3>Status Penyaluran</h3>
+                        <p>
+                            Perkembangan kegiatan penyaluran dari program yang
+                            pernah Anda dukung.
+                        </p>
                     </div>
 
-                    <h3>Laporan Penyaluran</h3>
-
-                    <p>
-                        Pantau informasi kegiatan penyaluran dana.
-                    </p>
-
-                    <small>Segera tersedia</small>
+                    <Link href="/akun/tracking">
+                        Lihat Tracking <ArrowRight size={16} />
+                    </Link>
                 </div>
-            </div>
+
+                <div className="pd-dashboard-stats">
+                    {[
+                        {
+                            label: 'Persiapan Penyaluran',
+                            value: distributionSummary.preparation ?? 0,
+                            icon: Clock,
+                        },
+                        {
+                            label: 'Sedang Berlangsung',
+                            value: distributionSummary.ongoing ?? 0,
+                            icon: PackageCheck,
+                        },
+                        {
+                            label: 'Selesai Dipublikasikan',
+                            value: distributionSummary.completed ?? 0,
+                            icon: CheckCircle,
+                        },
+                    ].map((item, index) => {
+                        const Icon = item.icon;
+
+                        return (
+                            <div className="pd-stat-card" key={index}>
+                                <div className="pd-stat-icon">
+                                    <Icon size={22} />
+                                </div>
+
+                                <p>{item.label}</p>
+                                <h3>{item.value} Kegiatan</h3>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
 
             {/* Donasi Terbaru */}
             <section className="pd-recent-section">
@@ -213,18 +323,22 @@ export default function Dashboard({
                                         </strong>
 
                                         <small>
-                                            {donation.donation_code} ·{' '}
+                                            {donation.donation_code} {' • '}
                                             {formatDate(donation.created_at)}
                                         </small>
                                     </div>
 
                                     <div className="pd-recent-value">
-                                        <strong>{formatRupiah(total)}</strong>
+                                        <strong>
+                                            {formatRupiah(total)}
+                                        </strong>
 
-                                        <span style={{
-                                            color: status.color,
-                                            background: status.background,
-                                        }}>
+                                        <span
+                                            style={{
+                                                color: status.color,
+                                                background: status.background,
+                                            }}
+                                        >
                                             {status.label}
                                         </span>
                                     </div>

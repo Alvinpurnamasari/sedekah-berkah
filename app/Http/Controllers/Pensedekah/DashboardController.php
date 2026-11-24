@@ -42,6 +42,46 @@ class DashboardController extends Controller
                 ->count('campaign_id'),
         ];
 
+        // Program yang pernah didukung melalui donasi nyata berhasil.
+        $supportedCampaignIds = (clone $donations)
+            ->where('payment_status', 'paid')
+            ->whereNotNull('campaign_id')
+            ->distinct()
+            ->pluck('campaign_id');
+
+        // Kegiatan penyaluran yang boleh dilihat Pensedekah.
+        $distributions = DB::table('distributions')
+            ->whereIn('campaign_id', $supportedCampaignIds)
+            ->where('is_simulated', false)
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->where('budget_status', 'approved')
+                        ->whereIn('status', ['planned', 'ongoing']);
+                })->orWhere(function ($q) {
+                    $q->where('status', 'completed')
+                        ->where('report_status', 'approved')
+                        ->where('is_published', true);
+                });
+            });
+
+        $distributionSummary = [
+            'preparation' => (clone $distributions)
+                ->where('status', 'planned')
+                ->where('budget_status', 'approved')
+                ->count(),
+
+            'ongoing' => (clone $distributions)
+                ->where('status', 'ongoing')
+                ->where('budget_status', 'approved')
+                ->count(),
+
+            'completed' => (clone $distributions)
+                ->where('status', 'completed')
+                ->where('report_status', 'approved')
+                ->where('is_published', true)
+                ->count(),
+        ];
+
         $recentDonations = (clone $donations)
             ->leftJoin(
                 'campaigns',
@@ -64,6 +104,7 @@ class DashboardController extends Controller
 
         return Inertia::render('Pensedekah/Dashboard', [
             'summary' => $summary,
+            'distributionSummary' => $distributionSummary,
             'recentDonations' => $recentDonations,
         ]);
     }
