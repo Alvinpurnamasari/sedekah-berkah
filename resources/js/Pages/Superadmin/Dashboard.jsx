@@ -19,8 +19,26 @@ const formatRupiah = (angka) => {
         maximumFractionDigits: 0,
     }).format(angka || 0);
 };
+const activityLabels = {
+    distribution_document_uploaded: 'Mengunggah dokumentasi penyaluran',
+    expense_approved: 'Menyetujui pengeluaran',
+    expense_rejected: 'Menolak pengajuan pengeluaran',
+    distribution_realization_updated: 'Memperbarui realisasi penyaluran',
+    system_settings_updated: 'Memperbarui pengaturan sistem',
+    distribution_budget_approved: 'Menyetujui anggaran penyaluran',
+    distribution_budget_rejected: 'Menolak anggaran penyaluran',
+    distribution_report_approved: 'Menyetujui laporan penyaluran',
+};
 
-export default function Dashboard({ stats = {} }) {
+const getActivityLabel = (action) => {
+    return activityLabels[action] || action
+        .replaceAll('_', ' ')
+        .replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+export default function Dashboard({
+    stats = {},
+    latestActivities = [],
+}) {
     const statistics = [
         ['Total dana masuk', formatRupiah(stats.totalDanaMasuk), Wallet, 'sa-green'],
         ['Dana disalurkan', formatRupiah(stats.danaDisalurkan), HandHeart, 'sa-blue'],
@@ -103,25 +121,95 @@ export default function Dashboard({ stats = {} }) {
             <section className="sa-bottom-grid">
                 {/* Aktivitas terbaru */}
                 <div className="sa-panel">
-                    <div className="sa-panel-heading">
-                        <div>
-                            <h3>Aktivitas terbaru</h3>
-                            <p>Riwayat aktivitas sistem</p>
-                        </div>
+    <div className="sa-panel-heading">
+        <div>
+            <h3>Aktivitas terbaru</h3>
+            <p>Riwayat aktivitas sistem</p>
+        </div>
 
-                        <History size={20} />
+        <History size={20} />
+    </div>
+
+    {latestActivities.length > 0 ? (
+        <div
+            style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+                marginTop: '20px',
+            }}
+        >
+            {latestActivities.map((activity) => (
+                <div
+                    key={activity.id}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '12px',
+                        paddingBottom: '14px',
+                        borderBottom: '1px solid #edf1ee',
+                    }}
+                >
+                    <div
+                        style={{
+                            width: '36px',
+                            height: '36px',
+                            minWidth: '36px',
+                            borderRadius: '10px',
+                            background: '#eaf7f0',
+                            color: '#16804a',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <History size={18} />
                     </div>
 
-                    <div className="sa-empty">
-                        <ClipboardList size={30} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <strong
+                            style={{
+                                display: 'block',
+                                fontSize: '13px',
+                                color: '#183b2d',
+                            }}
+                        >
+                            {getActivityLabel(activity.action)}
+                        </strong>
 
-                        <strong>Belum ada aktivitas</strong>
+                        <span
+                            style={{
+                                display: 'block',
+                                fontSize: '12px',
+                                color: '#64756c',
+                                marginTop: '4px',
+                            }}
+                        >
+                            Oleh: {activity.user_name || 'Pengguna tidak diketahui'}
+                        </span>
 
-                        <span>
-                            Aktivitas sistem akan tampil di sini.
+                        <span
+                            style={{
+                                display: 'block',
+                                fontSize: '11px',
+                                color: '#89958e',
+                                marginTop: '4px',
+                            }}
+                        >
+                            {activity.created_at}
                         </span>
                     </div>
                 </div>
+            ))}
+        </div>
+    ) : (
+        <div className="sa-empty">
+            <ClipboardList size={30} />
+            <strong>Belum ada aktivitas</strong>
+            <span>Aktivitas sistem akan tampil di sini.</span>
+        </div>
+    )}
+</div>
 
                 {/* Akses cepat */}
                 <div className="sa-panel">

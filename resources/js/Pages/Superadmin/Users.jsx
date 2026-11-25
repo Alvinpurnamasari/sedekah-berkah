@@ -50,6 +50,18 @@ export default function UsersPage({ users, filters = {}, roles = [] }) {
         });
     }
 
+    function resetFilters() {
+        setSearch('');
+        setRole('');
+        setStatus('');
+    
+        router.get('/superadmin/pengguna', {}, {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+        });
+    }
+
     function openCreate() {
         form.reset();
         form.clearErrors();
@@ -123,8 +135,12 @@ return;
             return;
         }
 
-        router.put(`/superadmin/pengguna/${userId}/password`, form.data, {
-            onSuccess: () => setModal(null),
+        form.put(`/superadmin/pengguna/${userId}/password`, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setModal(null);
+                form.reset();
+            },
         });
     }
 }
@@ -220,6 +236,19 @@ router.patch(url, {}, {
 
                         <button className="su-filter-button" type="submit">
                             Cari
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={resetFilters}
+                            className="su-filter-button"
+                            style={{
+                                background: '#eef5f1',
+                                color: '#176747',
+                                border: '1px solid #dce9e1',
+                            }}
+                        >
+                            Reset
                         </button>
                     </form>
 
@@ -425,6 +454,11 @@ router.patch(url, {}, {
                                         value={form.data.password_confirmation}
                                         onChange={e => form.setData('password_confirmation', e.target.value)}
                                     />
+                                    {form.errors.password_confirmation && (
+                                        <small className="su-error">
+                                            {form.errors.password_confirmation}
+                                        </small>
+                                    )}
                                 </>
                             )}
 

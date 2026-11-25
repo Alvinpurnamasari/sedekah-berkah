@@ -451,6 +451,33 @@ Route::middleware('role:admin')
             ->where('approval_status', 'pending')
             ->count();
     
+        // Lima aktivitas terbaru untuk Dashboard Superadmin
+        $latestActivities = DB::table('audit_logs')
+        ->leftJoin('users', 'audit_logs.user_id', '=', 'users.id')
+        ->select(
+            'audit_logs.id',
+            'audit_logs.action',
+            'audit_logs.entity_type',
+            'audit_logs.metadata',
+            'audit_logs.created_at',
+            'users.name as user_name'
+        )
+        ->orderByDesc('audit_logs.created_at')
+        ->limit(5)
+        ->get()
+        ->map(function ($activity) {
+            $activity->metadata = json_decode(
+                $activity->metadata ?? '{}',
+                true
+            ) ?: [];
+
+            $activity->created_at = \Carbon\Carbon::parse(
+                $activity->created_at
+            )->format('d M Y, H:i');
+
+            return $activity;
+        });
+
         return Inertia::render('Superadmin/Dashboard', [
             'stats' => [
                 'totalDanaMasuk' => (int) $totalDanaMasuk,
@@ -460,6 +487,7 @@ Route::middleware('role:admin')
                 'transaksiBerhasil' => (int) $transaksiBerhasil,
                 'menungguPersetujuan' => (int) $menungguPersetujuan,
             ],
+            'latestActivities' => $latestActivities,
         ]);
     
     })->middleware('role:superadmin')->name('superadmin.dashboard');
