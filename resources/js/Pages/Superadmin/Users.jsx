@@ -446,7 +446,13 @@ router.patch(url, {}, {
                                         value={form.data.password}
                                         onChange={e => form.setData('password', e.target.value)}
                                     />
-                                    {form.errors.password && <small className="su-error">{form.errors.password}</small>}
+                                    {form.errors.password && (
+                                        <small className="su-error">
+                                            {form.errors.password === 'validation.confirmed'
+                                                ? 'Konfirmasi password tidak sama.'
+                                                : form.errors.password}
+                                        </small>
+                                    )}
 
                                     <label>Konfirmasi password</label>
                                     <input
