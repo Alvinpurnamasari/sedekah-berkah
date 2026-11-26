@@ -90,7 +90,22 @@ class CampaignManagementController extends Controller
         ]);
     }
 
-
+/**
+ * Daftar akun buku besar yang boleh digunakan kampanye.
+ */
+private function getCampaignLedgerAccounts()
+{
+    return DB::table('ledger_accounts')
+        ->where('is_active', true)
+        ->where('fund_group', 'program')
+        ->whereIn('code', ['2001', '3001', '3002', '3003'])
+        ->orderBy('code')
+        ->get([
+            'id',
+            'code',
+            'name',
+        ]);
+}
     /**
      * Form tambah program.
      */
@@ -102,6 +117,7 @@ class CampaignManagementController extends Controller
             'beneficiaryTargets' => BeneficiaryTarget::where('is_active', true)
                 ->orderBy('name')
                 ->get(),
+            'ledgerAccounts' => $this->getCampaignLedgerAccounts(),
         ]);
     }
 
@@ -149,7 +165,9 @@ class CampaignManagementController extends Controller
             'beneficiaryTargets' => BeneficiaryTarget::where('is_active', true)
                 ->orderBy('name')
                 ->get(),
+            'ledgerAccounts' => $this->getCampaignLedgerAccounts(),
         ]);
+        
     }
 
     /**
@@ -229,6 +247,14 @@ class CampaignManagementController extends Controller
                 'required',
                 'string',
                 'max:255',
+            ],
+            'ledger_account_id' => [
+                'required',
+                'uuid',
+                Rule::exists('ledger_accounts', 'id')
+                    ->where('is_active', true)
+                    ->where('fund_group', 'program')
+                    ->whereIn('code', ['2001', '3001', '3002', '3003']),
             ],
             'beneficiary_targets' => [
                 'nullable',
