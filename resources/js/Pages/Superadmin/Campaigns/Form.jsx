@@ -8,6 +8,7 @@ export default function CampaignForm({
     campaign,
     categories = [],
     beneficiaryTargets = [],
+    ledgerAccounts = [],
 }) {
     const editing = Boolean(campaign);
 
@@ -21,6 +22,7 @@ export default function CampaignForm({
         end_date: campaign?.end_date?.substring(0, 10) || '',
         location: campaign?.location || 'Yogyakarta',
         beneficiary_targets: campaign?.beneficiary_targets?.map(item => item.id) || [],
+        ledger_account_id: campaign?.ledger_account_id || '',
     });
 
     function toggleTarget(id) {
@@ -185,14 +187,31 @@ export default function CampaignForm({
                             {form.errors.end_date && <small className="sc-error">{form.errors.end_date}</small>}
                         </div>
 
-                        <div className="sc-field">
-                            <label>Lokasi Program *</label>
-                            <input
-                                value={form.data.location}
-                                onChange={e => form.setData('location', e.target.value)}
-                                placeholder="Yogyakarta"
-                            />
-                            {form.errors.location && <small className="sc-error">{form.errors.location}</small>}
+                        <div className="sc-field sc-full">
+                            <label>Akun Buku Besar Program *</label>
+
+                            <select
+                                value={form.data.ledger_account_id}
+                                onChange={e => form.setData('ledger_account_id', e.target.value)}
+                            >
+                                <option value="">Pilih akun buku besar</option>
+
+                                {ledgerAccounts.map(account => (
+                                    <option key={account.id} value={account.id}>
+                                        {account.code} - {account.name}
+                                    </option>
+                                ))}
+                            </select>
+
+                            {form.errors.ledger_account_id && (
+                                <small className="sc-error">
+                                    {form.errors.ledger_account_id}
+                                </small>
+                            )}
+
+                            <small>
+                                Pilih akun yang sesuai dengan jenis program untuk pencatatan dana donasi.
+                            </small>
                         </div>
                     </div>
 
