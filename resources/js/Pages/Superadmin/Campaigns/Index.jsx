@@ -15,8 +15,11 @@ const rupiah = (value) => new Intl.NumberFormat('id-ID', {
 
 const statusLabel = {
     draft: 'Draft',
-    active: 'Aktif',
+    pending_approval: 'Menunggu Persetujuan',
     published: 'Published',
+    rejected: 'Ditolak',
+    inactive: 'Nonaktif',
+    active: 'Aktif',
 };
 
 export default function CampaignIndex({
