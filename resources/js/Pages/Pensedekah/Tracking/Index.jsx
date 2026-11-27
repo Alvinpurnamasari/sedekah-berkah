@@ -13,6 +13,10 @@ import {
     PackageCheck,
     Image as ImageIcon,
     Video,
+    PiggyBank,
+    HandCoins,
+    TrendingUp,
+    CircleDollarSign,
 } from 'lucide-react';
 import PensedekahLayout from '../../../Components/PensedekahLayout';
 
@@ -32,6 +36,55 @@ const dateFormat = (value) => {
         year: 'numeric',
     });
 };
+
+function FinanceCard({ icon: Icon, title, value, description }) {
+    return (
+        <div
+            style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 18,
+            }}
+        >
+            <Icon size={22} color="#176b45" />
+
+            <p
+                style={{
+                    color: '#64748b',
+                    fontSize: 12,
+                    margin: '12px 0 6px',
+                }}
+            >
+                {title}
+            </p>
+
+            <h3
+                style={{
+                    color: '#176b45',
+                    fontSize: 20,
+                    margin: 0,
+                    overflowWrap: 'anywhere',
+                }}
+            >
+                {rupiah(value)}
+            </h3>
+
+            {description && (
+                <p
+                    style={{
+                        color: '#94a3b8',
+                        fontSize: 11,
+                        margin: '7px 0 0',
+                        lineHeight: 1.5,
+                    }}
+                >
+                    {description}
+                </p>
+            )}
+        </div>
+    );
+}
 
 function Stage({ completed, active, title, description }) {
     const color = completed || active ? '#176b45' : '#94a3b8';
@@ -170,7 +223,6 @@ function DistributionCard({ distribution }) {
     const ongoing = distribution.status === 'ongoing';
     const planned = distribution.status === 'planned';
 
-    // Tahapan mengikuti status kegiatan penyaluran.
     const preparationDone = ongoing || completed;
     const preparationActive = planned;
     const distributionDone = completed;
@@ -372,6 +424,7 @@ function DistributionCard({ distribution }) {
 export default function Index({
     campaigns = [],
     distributions = [],
+    financeSummary = {},
 }) {
     const totalDonation = campaigns.reduce(
         (total, campaign) =>
@@ -401,6 +454,7 @@ export default function Index({
                     </p>
                 </div>
 
+                {/* Statistik donasi dan penyaluran */}
                 <div
                     style={{
                         display: 'grid',
@@ -462,6 +516,77 @@ export default function Index({
                     </div>
                 </div>
 
+                {/* Ringkasan keuangan seluruh program yang didukung */}
+                <section style={{ marginBottom: 32 }}>
+                    <div style={{ marginBottom: 16 }}>
+                        <h3
+                            style={{
+                                color: '#176b45',
+                                margin: '0 0 7px',
+                            }}
+                        >
+                            Ringkasan Keuangan Program
+                        </h3>
+
+                        <p
+                            style={{
+                                color: '#64748b',
+                                fontSize: 13,
+                                lineHeight: 1.6,
+                                margin: 0,
+                            }}
+                        >
+                            Gambaran keseluruhan dana pada program-program
+                            yang pernah kamu dukung. Nominal ini merupakan
+                            keuangan program, bukan saldo pribadi donatur.
+                        </p>
+                    </div>
+
+                    <div
+                        style={{
+                            display: 'grid',
+                            gridTemplateColumns:
+                                'repeat(auto-fit, minmax(210px, 1fr))',
+                            gap: 14,
+                        }}
+                    >
+                        <FinanceCard
+                            icon={PiggyBank}
+                            title="Total Dana Program Masuk"
+                            value={financeSummary.total_donations}
+                            description="Akumulasi donasi berhasil dari seluruh pendukung program."
+                        />
+
+                        <FinanceCard
+                            icon={HandCoins}
+                            title="Anggaran Disetujui"
+                            value={financeSummary.allocated_budget}
+                            description="Total anggaran kegiatan penyaluran yang telah disetujui."
+                        />
+
+                        <FinanceCard
+                            icon={TrendingUp}
+                            title="Pengeluaran Terealisasi"
+                            value={financeSummary.total_expenses}
+                            description="Pengeluaran penyaluran yang disetujui dan sudah dibayar."
+                        />
+
+                        <FinanceCard
+                            icon={Wallet}
+                            title="Dana Belum Dialokasikan"
+                            value={financeSummary.unallocated_balance}
+                            description="Dana program masuk dikurangi anggaran yang disetujui."
+                        />
+
+                        <FinanceCard
+                            icon={CircleDollarSign}
+                            title="Anggaran Belum Terealisasi"
+                            value={financeSummary.allocated_not_realized}
+                            description="Anggaran disetujui yang belum digunakan untuk pengeluaran dibayar."
+                        />
+                    </div>
+                </section>
+
                 <h3
                     style={{
                         color: '#176b45',
@@ -505,6 +630,7 @@ export default function Index({
                                 margin: '0 auto 12px',
                             }}
                         />
+
                         <h3
                             style={{
                                 color: '#1e293b',
