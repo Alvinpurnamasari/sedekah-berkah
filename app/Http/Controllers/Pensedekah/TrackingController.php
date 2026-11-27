@@ -42,6 +42,7 @@ class TrackingController extends Controller
          */
 
         $programCampaignIds = DB::table('campaigns')
+
             ->join(
                 'ledger_accounts',
                 'campaigns.ledger_account_id',
@@ -126,6 +127,11 @@ class TrackingController extends Controller
             'unallocated_balance' => (int) $campaigns->sum('unallocated_balance'),
             'allocated_not_realized' => (int) $campaigns->sum('allocated_not_realized'),
         ];
+
+        $financeSummary['funding_shortfall'] = max(
+            $financeSummary['allocated_budget'] - $financeSummary['total_donations'],
+            0
+        );
 
         // Kegiatan penyaluran yang boleh dilihat Pensedekah.
         $distributions = DB::table('distributions')

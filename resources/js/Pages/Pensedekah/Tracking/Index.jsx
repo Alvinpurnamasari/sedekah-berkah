@@ -584,6 +584,13 @@ export default function Index({
                             value={financeSummary.allocated_not_realized}
                             description="Anggaran disetujui yang belum digunakan untuk pengeluaran dibayar."
                         />
+
+                        <FinanceCard
+                            icon={CircleDollarSign}
+                            title="Kekurangan Pendanaan"
+                            value={financeSummary.funding_shortfall}
+                            description="Selisih anggaran disetujui dengan dana program yang masuk."
+                        />
                     </div>
                 </section>
 
