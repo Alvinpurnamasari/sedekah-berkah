@@ -20,7 +20,12 @@ const formatDate = (date) => {
     });
 };
 
-export default function UsersPage({ users, filters = {}, roles = [] }) {
+export default function UsersPage({
+    users,
+    filters = {},
+    roles = [],
+    userCounts = {},
+}) {
     const [modal, setModal] = useState(null);
     const [search, setSearch] = useState(filters.search || '');
     const [role, setRole] = useState(filters.role || '');
@@ -37,6 +42,20 @@ export default function UsersPage({ users, filters = {}, roles = [] }) {
 
     const filteredCount = users.total || 0;
 
+
+    function changeRoleTab(selectedRole) {
+        setRole(selectedRole);
+    
+        router.get('/superadmin/pengguna', {
+            search,
+            role: selectedRole,
+            status,
+        }, {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        });
+    }
     function applyFilters(e) {
         e.preventDefault();
 
@@ -201,7 +220,25 @@ router.patch(url, {}, {
                         <h3>{filteredCount.toLocaleString('id-ID')}</h3>
                     </div>
                 </section>
+<section className="su-role-tabs">
+    <button
+        type="button"
+        onClick={() => changeRoleTab('admin')}
+        className={role === 'admin' ? 'active' : ''}
+    >
+        Admin
+        <span>{userCounts.admin || 0}</span>
+    </button>
 
+    <button
+        type="button"
+        onClick={() => changeRoleTab('pensedekah')}
+        className={role === 'pensedekah' ? 'active' : ''}
+    >
+        Pensedekah
+        <span>{userCounts.pensedekah || 0}</span>
+    </button>
+</section>
                 <section className="su-panel">
                     <form className="su-filters" onSubmit={applyFilters}>
                         <div className="su-search">
@@ -213,17 +250,6 @@ router.patch(url, {}, {
                             />
                         </div>
 
-                        <select
-                            value={role}
-                            onChange={e => setRole(e.target.value)}
-                        >
-                            <option value="">Semua role</option>
-                            {roles.map(item => (
-                                <option key={item.id} value={item.name}>
-                                    {item.name}
-                                </option>
-                            ))}
-                        </select>
 
                         <select
                             value={status}

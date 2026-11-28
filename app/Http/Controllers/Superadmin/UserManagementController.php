@@ -13,35 +13,55 @@ use Inertia\Inertia;
 class UserManagementController extends Controller
 {
     public function index(Request $request)
-    {
-        $users = User::with('role')
-            ->when($request->search, function ($query, $search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
-                });
-            })
-            ->when($request->role, function ($query, $role) {
-                $query->whereHas('role', function ($q) use ($role) {
-                    $q->where('name', $role);
-                });
-            })
-            ->when($request->status, function ($query, $status) {
-                $query->where('status', $status);
-            })
-            ->latest()
-            ->paginate(10)
-            ->withQueryString();
+{
+    $selectedRole = in_array($request->input('role'), ['admin', 'pensedekah'], true)
+    ? $request->input('role')
+    : 'admin';
+    // Hitung jumlah akun berdasarkan role.
+    $adminCount = User::whereHas('role', function ($query) {
+        $query->where('name', 'admin');
+    })->count();
 
-        return Inertia::render('Superadmin/Users', [
-            'users' => $users,
-            'filters' => $request->only('search', 'role', 'status'),
-            'roles' => Role::whereIn('name', ['admin', 'pensedekah'])
-                ->orderBy('name')
-                ->get(['id', 'name']),
-        ]);
-    }
+    $pensedekahCount = User::whereHas('role', function ($query) {
+        $query->where('name', 'pensedekah');
+    })->count();
+
+    // Daftar pengguna mengikuti pencarian, role, dan status.
+    $users = User::with('role')
+        ->when($request->search, function ($query, $search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%");
+            });
+        })
+        ->whereHas('role', function ($query) use ($selectedRole) {
+            $query->where('name', $selectedRole);
+        })
+        ->when($request->status, function ($query, $status) {
+            $query->where('status', $status);
+        })
+        ->latest()
+        ->paginate(10)
+        ->withQueryString();
+
+    return Inertia::render('Superadmin/Users', [
+        'users' => $users,
+        'filters' => array_merge(
+            $request->only('search', 'status'),
+            ['role' => $selectedRole]
+        ),
+        'roles' => Role::whereIn('name', ['admin', 'pensedekah'])
+            ->orderBy('name')
+            ->get(['id', 'name']),
+
+        // Jumlah akun untuk tab.
+        'userCounts' => [
+            'admin' => $adminCount,
+            'pensedekah' => $pensedekahCount,
+        ],
+    ]);
+}
 
     public function store(Request $request)
     {
