@@ -37,7 +37,10 @@ class AllocationController extends Controller
                 COALESCE(SUM(
                     CASE
                         WHEN journal_entries.id IS NOT NULL
-                        THEN journal_lines.credit - journal_lines.debit
+                        THEN
+                            CAST(COALESCE(journal_lines.credit, 0) AS DECIMAL(20,2))
+                            -
+                            CAST(COALESCE(journal_lines.debit, 0) AS DECIMAL(20,2))
                         ELSE 0
                     END
                 ), 0) as balance
