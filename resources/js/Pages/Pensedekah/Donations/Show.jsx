@@ -34,7 +34,32 @@ const proofLabels = {
     approved: 'Bukti Transfer Diterima',
     rejected: 'Bukti Transfer Ditolak',
 };
+const formatProvider = (provider) => {
+    const labels = {
+        manual_bank_transfer: 'Transfer Bank Manual',
+        midtrans: 'Midtrans',
+    };
 
+    return labels[provider] || provider || 'Belum tersedia';
+};
+
+const formatPaymentMethod = (method, provider) => {
+    // Jika provider transfer bank manual,
+    // tetapi metode pembayaran kosong, gunakan label Transfer Bank.
+    if (!method && provider === 'manual_bank_transfer') {
+        return 'Transfer Bank';
+    }
+
+    const labels = {
+        bank_transfer: 'Transfer Bank',
+        qris: 'QRIS',
+        gopay: 'GoPay',
+        shopeepay: 'ShopeePay',
+        credit_card: 'Kartu Kredit',
+    };
+
+    return labels[method] || method || 'Belum tersedia';
+};
 function StatusBadge({ status, type = 'payment' }) {
     const labels = type === 'proof' ? proofLabels : paymentLabels;
     const label = labels[status] || status || 'Belum tersedia';
@@ -324,7 +349,7 @@ export default function Show({ donation }) {
 
                     <DetailRow
                         label="Penyedia Pembayaran"
-                        value={donation.provider}
+                        value={formatProvider(donation.provider)}
                     />
 
                     <DetailRow
@@ -334,7 +359,10 @@ export default function Show({ donation }) {
 
                     <DetailRow
                         label="Metode Pembayaran"
-                        value={donation.payment_method}
+                        value={formatPaymentMethod(
+                            donation.payment_method,
+                            donation.provider
+                        )}
                     />
 
                     <DetailRow
