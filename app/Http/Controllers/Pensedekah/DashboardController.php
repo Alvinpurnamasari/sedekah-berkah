@@ -49,6 +49,91 @@ class DashboardController extends Controller
             ->distinct()
             ->pluck('campaign_id');
 
+                /*
+         * Ringkasan keuangan program.
+         * Mengikuti perhitungan pada halaman Tracking Penyaluran.
+         */
+
+         $programCampaignIds = DB::table('campaigns')
+         ->join(
+             'ledger_accounts',
+             'campaigns.ledger_account_id',
+             '=',
+             'ledger_accounts.id'
+         )
+         ->whereIn('campaigns.id', $supportedCampaignIds)
+         ->where('ledger_accounts.fund_group', 'program')
+         ->pluck('campaigns.id');
+
+     // Total donasi berhasil per program.
+     $donationTotals = DB::table('donations')
+         ->whereIn('campaign_id', $programCampaignIds)
+         ->where('payment_status', 'paid')
+         ->where('is_simulated', false)
+         ->select('campaign_id')
+         ->selectRaw('SUM(COALESCE(donation_amount, 0)) as total')
+         ->groupBy('campaign_id')
+         ->get()
+         ->keyBy('campaign_id');
+
+     // Total anggaran yang disetujui per program.
+     $allocationTotals = DB::table('distributions')
+         ->whereIn('campaign_id', $programCampaignIds)
+         ->where('budget_status', 'approved')
+         ->where('is_simulated', false)
+         ->select('campaign_id')
+         ->selectRaw('SUM(COALESCE(approved_budget, 0)) as total')
+         ->groupBy('campaign_id')
+         ->get()
+         ->keyBy('campaign_id');
+
+     // Total pengeluaran terealisasi per program.
+     $expenseTotals = DB::table('expenses')
+         ->whereIn('campaign_id', $programCampaignIds)
+         ->where('expense_type', 'distribution_detail')
+         ->where('approval_status', 'approved')
+         ->where('payment_status', 'paid')
+         ->where('is_simulated', false)
+         ->select('campaign_id')
+         ->selectRaw('SUM(COALESCE(amount, 0)) as total')
+         ->groupBy('campaign_id')
+         ->get()
+         ->keyBy('campaign_id');
+
+     // Jumlahkan hasil masing-masing program.
+     $totalProgramDonations = (int) $programCampaignIds->sum(
+         fn ($id) => (int) ($donationTotals->get($id)->total ?? 0)
+     );
+
+     $totalAllocatedBudget = (int) $programCampaignIds->sum(
+         fn ($id) => (int) ($allocationTotals->get($id)->total ?? 0)
+     );
+
+     $totalProgramExpenses = (int) $programCampaignIds->sum(
+         fn ($id) => (int) ($expenseTotals->get($id)->total ?? 0)
+     );
+
+     $financeSummary = [
+         'total_donations' => $totalProgramDonations,
+         'allocated_budget' => $totalAllocatedBudget,
+         'total_expenses' => $totalProgramExpenses,
+
+         'unallocated_balance' => max(
+             0,
+             $totalProgramDonations - $totalAllocatedBudget
+         ),
+
+         'allocated_not_realized' => max(
+             0,
+             $totalAllocatedBudget - $totalProgramExpenses
+         ),
+
+         'funding_shortfall' => max(
+             0,
+             $totalAllocatedBudget - $totalProgramDonations
+         ),
+     ];
+
         // Kegiatan penyaluran yang boleh dilihat Pensedekah.
         $distributions = DB::table('distributions')
             ->whereIn('campaign_id', $supportedCampaignIds)
@@ -102,10 +187,11 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        return Inertia::render('Pensedekah/Dashboard', [
-            'summary' => $summary,
-            'distributionSummary' => $distributionSummary,
-            'recentDonations' => $recentDonations,
-        ]);
+            return Inertia::render('Pensedekah/Dashboard', [
+                'summary' => $summary,
+                'distributionSummary' => $distributionSummary,
+                'recentDonations' => $recentDonations,
+                'financeSummary' => $financeSummary,
+            ]);
     }
 }

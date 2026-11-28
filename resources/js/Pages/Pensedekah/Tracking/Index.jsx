@@ -593,7 +593,7 @@ export default function Index({
                         />
                     </div>
                 </section>
-
+  
                 <h3
                     style={{
                         color: '#176b45',

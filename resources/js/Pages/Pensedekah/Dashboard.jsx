@@ -14,6 +14,10 @@ import {
     MapPinned,
     Megaphone,
     PackageCheck,
+    PiggyBank,
+    HandCoins,
+    TrendingUp,
+    CircleDollarSign,
 } from 'lucide-react';
 
 import PensedekahLayout from '@/Components/PensedekahLayout';
@@ -34,7 +38,52 @@ const formatDate = (value) => {
         year: 'numeric',
     });
 };
+function FinanceCard({ icon: Icon, title, value, description }) {
+    return (
+        <div
+            style={{
+                background: '#fff',
+                border: '1px solid #e5e7eb',
+                borderRadius: 14,
+                padding: 18,
+            }}
+        >
+            <Icon size={22} color="#176b45" />
 
+            <p
+                style={{
+                    color: '#64748b',
+                    fontSize: 12,
+                    margin: '12px 0 6px',
+                }}
+            >
+                {title}
+            </p>
+
+            <h3
+                style={{
+                    color: '#176b45',
+                    fontSize: 20,
+                    margin: 0,
+                    overflowWrap: 'anywhere',
+                }}
+            >
+                {formatRupiah(value)}
+            </h3>
+
+            <p
+                style={{
+                    color: '#94a3b8',
+                    fontSize: 11,
+                    margin: '7px 0 0',
+                    lineHeight: 1.5,
+                }}
+            >
+                {description}
+            </p>
+        </div>
+    );
+}
 const paymentStatus = {
     pending: {
         label: 'Menunggu Pembayaran',
@@ -93,6 +142,7 @@ export default function Dashboard({
     summary = {},
     distributionSummary = {},
     recentDonations = [],
+    financeSummary = {},
 }) {
     const statistics = [
         {
@@ -183,6 +233,71 @@ export default function Dashboard({
                 </Link>
             </div>
 
+            {/* Ringkasan Keuangan Program */}
+            <section style={{ marginTop: 28 }}>
+                <div className="pd-section-heading">
+                    <div>
+                        <h3>Ringkasan Keuangan Program</h3>
+                        <p>
+                            Gambaran keseluruhan dana pada program-program
+                            yang pernah Anda dukung. Nominal ini merupakan
+                            keuangan program, bukan saldo pribadi donatur.
+                        </p>
+                    </div>
+                </div>
+
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns:
+                            'repeat(auto-fit, minmax(210px, 1fr))',
+                        gap: 14,
+                    }}
+                >
+                    <FinanceCard
+                        icon={PiggyBank}
+                        title="Total Dana Program Masuk"
+                        value={financeSummary.total_donations}
+                        description="Akumulasi donasi berhasil dari seluruh pendukung program."
+                    />
+
+                    <FinanceCard
+                        icon={HandCoins}
+                        title="Anggaran Disetujui"
+                        value={financeSummary.allocated_budget}
+                        description="Total anggaran kegiatan penyaluran yang telah disetujui."
+                    />
+
+                    <FinanceCard
+                        icon={TrendingUp}
+                        title="Pengeluaran Terealisasi"
+                        value={financeSummary.total_expenses}
+                        description="Pengeluaran penyaluran yang disetujui dan sudah dibayar."
+                    />
+
+                    <FinanceCard
+                        icon={Wallet}
+                        title="Dana Belum Dialokasikan"
+                        value={financeSummary.unallocated_balance}
+                        description="Dana program masuk dikurangi anggaran yang disetujui."
+                    />
+
+                    <FinanceCard
+                        icon={CircleDollarSign}
+                        title="Anggaran Belum Terealisasi"
+                        value={financeSummary.allocated_not_realized}
+                        description="Anggaran disetujui yang belum digunakan untuk pengeluaran dibayar."
+                    />
+
+                    <FinanceCard
+                        icon={CircleDollarSign}
+                        title="Kekurangan Pendanaan"
+                        value={financeSummary.funding_shortfall}
+                        description="Selisih anggaran disetujui dengan dana program yang masuk."
+                    />
+                </div>
+            </section>
+            
             {/* Akses Cepat */}
             <section style={{ marginTop: 28 }}>
                 <div className="pd-section-heading">
